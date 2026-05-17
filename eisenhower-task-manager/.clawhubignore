@@ -1,0 +1,7 @@
+# Runtime data & Logs
+dashboard/port.conf
+dashboard/dashboard.pid
+dashboard/dashboard.log
+dashboard/node_modules/
+tasks/
+.DS_Store
