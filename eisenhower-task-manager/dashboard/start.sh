@@ -31,7 +31,7 @@ SAVED_PORT=${SAVED_PORT:-$DEFAULT_PORT}
 
 # Parse arguments
 USER_PORT=""
-EISENHOWER_TASKS_DIR=""
+# Preserve existing EISENHOWER_TASKS_DIR from environment
 DAEMON_MODE=false
 ARGS=()
 
@@ -42,7 +42,11 @@ while [[ "$#" -gt 0 ]]; do
             shift 2
             ;;
         --tasks-dir)
-            EISENHOWER_TASKS_DIR="$2"
+            if [ -n "$EISENHOWER_TASKS_DIR" ] && [ "$EISENHOWER_TASKS_DIR" != "$2" ]; then
+                echo "[Dashboard] Note: System environment variable EISENHOWER_TASKS_DIR is set. Ignoring --tasks-dir argument."
+            else
+                EISENHOWER_TASKS_DIR="$2"
+            fi
             shift 2
             ;;
         --daemon)
@@ -71,7 +75,7 @@ fi
 # Export EISENHOWER_TASKS_DIR if specified
 if [ -n "$EISENHOWER_TASKS_DIR" ]; then
     export EISENHOWER_TASKS_DIR="$EISENHOWER_TASKS_DIR"
-    echo "[Dashboard] Using custom tasks directory: $EISENHOWER_TASKS_DIR"
+    echo "[Dashboard] Using tasks directory: $EISENHOWER_TASKS_DIR"
 fi
 
 cd "$SCRIPT_DIR"
