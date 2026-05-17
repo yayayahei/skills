@@ -7,6 +7,9 @@ description: Task management based on Eisenhower Matrix + P0-P2 priority with Cu
 
 ## Architecture
 
+**Tasks Directory Configuration:**
+By default, the skill operates in the `tasks/` directory relative to this SKILL.md. You can override this globally by setting the `EISENHOWER_TASKS_DIR` environment variable to an absolute path (e.g., `export EISENHOWER_TASKS_DIR=/Users/xxx/tasks`).
+
 | Layer | File | Purpose |
 |-------|------|---------|
 | Customer | `tasks/customer-projects.md` | ALL customer projects (single source of truth) |
@@ -270,7 +273,14 @@ Run in background, service continues after terminal closes:
 
 ```bash
 cd dashboard
-./start.sh --daemon     # Start in background, no terminal dependency
+# Start in background, no terminal dependency
+./start.sh --daemon 
+
+# Optional: You can specify custom task directory via flag or environment variable
+./start.sh --daemon --tasks-dir /your/custom/path
+# OR
+export EISENHOWER_TASKS_DIR=/your/custom/path
+./start.sh --daemon
 ```
 
 **Features**:
@@ -305,6 +315,9 @@ curl http://localhost:8080/api/health
 ```
 
 ### Architecture
+
+**Tasks Directory Configuration:**
+By default, the skill operates in the `tasks/` directory relative to this SKILL.md. You can override this globally by setting the `EISENHOWER_TASKS_DIR` environment variable to an absolute path (e.g., `export EISENHOWER_TASKS_DIR=/Users/xxx/tasks`).
 - Markdown files are the single source of truth
 - Node.js server parses markdown in real-time
 - WebSocket pushes updates to browser when files change

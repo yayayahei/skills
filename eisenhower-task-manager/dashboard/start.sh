@@ -14,23 +14,46 @@ if [ ! -d "$SCRIPT_DIR/node_modules" ]; then
   fi
 fi
 
-# Read saved port (default: 8080)
+# Read saved port
 if [ -f "$PORT_FILE" ]; then
     SAVED_PORT=$(cat "$PORT_FILE" | tr -d '[:space:]')
 fi
-SAVED_PORT=${SAVED_PORT:-8080}
 
-# Check if user specified a port via --port argument
+# If we are in the development repository (detected by being inside yayayahei-skills)
+# use 8081 as default to avoid clashing with the global installation
+if [[ "$SCRIPT_DIR" == *"yayayahei-skills"* ]]; then
+    DEFAULT_PORT=8081
+else
+    DEFAULT_PORT=8080
+fi
+
+SAVED_PORT=${SAVED_PORT:-$DEFAULT_PORT}
+
+# Parse arguments
 USER_PORT=""
-for ((i=1; i<=$#; i++)); do
-    arg="${!i}"
-    if [ "$arg" = "--port" ]; then
-        next=$((i+1))
-        if [ $next -le $# ]; then
-            USER_PORT="${!next}"
-        fi
-        break
-    fi
+EISENHOWER_TASKS_DIR=""
+DAEMON_MODE=false
+ARGS=()
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --port)
+            USER_PORT="$2"
+            shift 2
+            ;;
+        --tasks-dir)
+            EISENHOWER_TASKS_DIR="$2"
+            shift 2
+            ;;
+        --daemon)
+            DAEMON_MODE=true
+            shift
+            ;;
+        *)
+            ARGS+=("$1")
+            shift
+            ;;
+    esac
 done
 
 # Determine which port to use
@@ -38,30 +61,20 @@ if [ -n "$USER_PORT" ]; then
     # User specified a port, save it for next time
     echo "$USER_PORT" > "$PORT_FILE"
     echo "[Dashboard] Port saved: $USER_PORT"
+    ARGS+=("--port" "$USER_PORT")
 else
     # No port specified, use saved port
-    set -- "$@" --port "$SAVED_PORT"
+    ARGS+=("--port" "$SAVED_PORT")
     echo "[Dashboard] Using saved port: $SAVED_PORT"
 fi
 
+# Export EISENHOWER_TASKS_DIR if specified
+if [ -n "$EISENHOWER_TASKS_DIR" ]; then
+    export EISENHOWER_TASKS_DIR="$EISENHOWER_TASKS_DIR"
+    echo "[Dashboard] Using custom tasks directory: $EISENHOWER_TASKS_DIR"
+fi
+
 cd "$SCRIPT_DIR"
-
-# Check for --daemon flag
-DAEMON_MODE=false
-for arg in "$@"; do
-    if [ "$arg" = "--daemon" ]; then
-        DAEMON_MODE=true
-        break
-    fi
-done
-
-# Remove --daemon from args if present
-ARGS=()
-for arg in "$@"; do
-    if [ "$arg" != "--daemon" ]; then
-        ARGS+=("$arg")
-    fi
-done
 
 if [ "$DAEMON_MODE" = true ]; then
     # Daemon mode: run in background with nohup
@@ -73,7 +86,7 @@ if [ "$DAEMON_MODE" = true ]; then
         OLD_PID=$(cat "$PID_FILE")
         if kill -0 "$OLD_PID" 2>/dev/null; then
             echo "[Dashboard] Already running (PID: $OLD_PID)"
-            echo "[Dashboard] Visit: http://localhost:$SAVED_PORT"
+            echo "[Dashboard] Visit: http://localhost:${USER_PORT:-$SAVED_PORT}"
             exit 0
         fi
     fi
@@ -88,7 +101,7 @@ if [ "$DAEMON_MODE" = true ]; then
     sleep 2
     if kill -0 $PID 2>/dev/null; then
         echo "[Dashboard] Started successfully (PID: $PID)"
-        echo "[Dashboard] Visit: http://localhost:$SAVED_PORT"
+        echo "[Dashboard] Visit: http://localhost:${USER_PORT:-$SAVED_PORT}"
         echo "[Dashboard] Stop with: kill $PID"
     else
         echo "[Dashboard] Failed to start. Check log: $LOG_FILE"

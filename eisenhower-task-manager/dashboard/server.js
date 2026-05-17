@@ -583,7 +583,7 @@ function broadcast(data) {
 
 // Watch for file changes
 // Tasks are located in workspace/tasks/ directory (4 levels up from dashboard)
-const tasksDir = path.join(__dirname, '../../../tasks');
+const tasksDir = process.env.EISENHOWER_TASKS_DIR || path.join(__dirname, '../tasks');
 const watchFiles = [
   path.join(tasksDir, 'tasks.md'),
   path.join(tasksDir, 'customer-projects.md'),

@@ -294,9 +294,9 @@ function renderTaskList(elementId, tasks, quadrant) {
       e.stopPropagation();
       const taskId = parseInt(btn.dataset.taskId);
       const taskQuadrant = btn.dataset.quadrant;
-      if (confirm(`Complete task #${taskId}?`)) {
+      showConfirm(`Complete task #${taskId}?`, () => {
         completeTask(taskId, taskQuadrant);
-      }
+      });
     });
   });
 
@@ -306,9 +306,9 @@ function renderTaskList(elementId, tasks, quadrant) {
       e.stopPropagation();
       const taskId = parseInt(btn.dataset.taskId);
       const taskQuadrant = btn.dataset.quadrant;
-      if (confirm(`Delete task #${taskId}?`)) {
+      showConfirm(`Delete task #${taskId}?`, () => {
         deleteTask(taskId, taskQuadrant);
-      }
+      });
     });
   });
 
@@ -1032,9 +1032,9 @@ function renderCustomers(data, filter = 'all') {
       e.stopPropagation();
       const projectId = parseInt(btn.dataset.projectId);
       const customerName = btn.dataset.customer;
-      if (confirm(`Complete project #${projectId} from ${customerName}?`)) {
+      showConfirm(`Complete project #${projectId} from ${customerName}?`, () => {
         completeCustomerProject(projectId, customerName);
-      }
+      });
     });
   });
 
@@ -1044,9 +1044,9 @@ function renderCustomers(data, filter = 'all') {
       e.stopPropagation();
       const projectId = parseInt(btn.dataset.projectId);
       const customerName = btn.dataset.customer;
-      if (confirm(`Delete project #${projectId} from ${customerName}?`)) {
+      showConfirm(`Delete project #${projectId} from ${customerName}?`, () => {
         deleteCustomerProject(projectId, customerName);
-      }
+      });
     });
   });
 }
@@ -1156,9 +1156,9 @@ function renderDelegation(data, filter = 'all') {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const taskId = parseInt(btn.dataset.taskId);
-      if (confirm(`Complete delegation task #${taskId}?`)) {
+      showConfirm(`Complete delegation task #${taskId}?`, () => {
         completeDelegationTask(taskId);
-      }
+      });
     });
   });
 
@@ -1167,9 +1167,9 @@ function renderDelegation(data, filter = 'all') {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const taskId = parseInt(btn.dataset.taskId);
-      if (confirm(`Delete delegation task #${taskId}?`)) {
+      showConfirm(`Delete delegation task #${taskId}?`, () => {
         deleteDelegationTask(taskId);
-      }
+      });
     });
   });
 }
@@ -1257,9 +1257,9 @@ function renderMaybe(data) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const taskId = parseInt(btn.dataset.taskId);
-      if (confirm(`Complete maybe task #${taskId}?`)) {
+      showConfirm(`Complete maybe task #${taskId}?`, () => {
         completeMaybeTask(taskId);
-      }
+      });
     });
   });
 
@@ -1278,9 +1278,9 @@ function renderMaybe(data) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const taskId = parseInt(btn.dataset.taskId);
-      if (confirm(`Delete maybe task #${taskId}?`)) {
+      showConfirm(`Delete maybe task #${taskId}?`, () => {
         deleteMaybeTask(taskId);
-      }
+      });
     });
   });
 }
@@ -2247,4 +2247,91 @@ async function handleMaybeDrop(e) {
     console.error('[Maybe Drop] Error:', error);
     await fetchInitialData();
   }
+}
+
+// Custom Confirm Function
+function showConfirm(message, onConfirm) {
+  // Prevent multiple dialogs
+  if (document.getElementById('customConfirmOverlay')) {
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'customConfirmOverlay';
+  overlay.className = 'custom-alert-overlay';
+
+  overlay.innerHTML = `
+    <div class="custom-alert-modal">
+      <div class="custom-alert-message">${escapeHtml(message)}</div>
+      <div class="custom-confirm-actions">
+        <button class="custom-alert-btn custom-confirm-cancel">Cancel</button>
+        <button class="custom-alert-btn custom-confirm-ok">OK</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const btnOk = overlay.querySelector('.custom-confirm-ok');
+  const btnCancel = overlay.querySelector('.custom-confirm-cancel');
+  
+  let isClosing = false;
+  
+  const closeConfirm = () => {
+    if (isClosing) return;
+    isClosing = true;
+    
+    document.removeEventListener('keydown', handleKeydown);
+    overlay.classList.remove('show');
+    
+    setTimeout(() => {
+      if (overlay.parentNode) {
+        overlay.remove();
+      }
+    }, 200);
+  };
+
+  const handleKeydown = (e) => {
+    if (isClosing) return;
+    
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      closeConfirm();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      closeConfirm();
+      if (onConfirm) onConfirm();
+    }
+  };
+
+  btnOk.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeConfirm();
+    if (onConfirm) onConfirm();
+  });
+
+  btnCancel.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeConfirm();
+  });
+  
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      closeConfirm();
+    }
+  });
+
+  document.addEventListener('keydown', handleKeydown);
+
+  // Trigger animation
+  requestAnimationFrame(() => {
+    overlay.classList.add('show');
+    // Remove focus to prevent Enter key double trigger
+    btnCancel.blur();
+    btnOk.blur();
+  });
 }

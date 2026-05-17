@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Tasks are located in workspace/tasks/ directory (4 levels up from dashboard)
-const TASKS_DIR = path.join(__dirname, '../../../tasks');
+const EISENHOWER_TASKS_DIR = process.env.EISENHOWER_TASKS_DIR || path.join(__dirname, '../tasks');
 
 /**
  * Parse tasks.md - Four Quadrants Format
@@ -303,28 +303,28 @@ function loadAllTasks() {
   };
 
   try {
-    const tasksContent = fs.readFileSync(path.join(TASKS_DIR, 'tasks.md'), 'utf8');
+    const tasksContent = fs.readFileSync(path.join(EISENHOWER_TASKS_DIR, 'tasks.md'), 'utf8');
     data.tasks = parseTasks(tasksContent);
   } catch (e) {
     data.tasks = { error: e.message, q1: [], q2: [], q3: [], q4: [], stats: {} };
   }
 
   try {
-    const customerContent = fs.readFileSync(path.join(TASKS_DIR, 'customer-projects.md'), 'utf8');
+    const customerContent = fs.readFileSync(path.join(EISENHOWER_TASKS_DIR, 'customer-projects.md'), 'utf8');
     data.customerProjects = parseCustomerProjects(customerContent);
   } catch (e) {
     data.customerProjects = { error: e.message, customers: [], stats: {} };
   }
 
   try {
-    const delegationContent = fs.readFileSync(path.join(TASKS_DIR, 'delegation.md'), 'utf8');
+    const delegationContent = fs.readFileSync(path.join(EISENHOWER_TASKS_DIR, 'delegation.md'), 'utf8');
     data.delegation = parseDelegation(delegationContent);
   } catch (e) {
     data.delegation = { error: e.message, tasks: [], stats: {} };
   }
 
   try {
-    const maybeContent = fs.readFileSync(path.join(TASKS_DIR, 'maybe.md'), 'utf8');
+    const maybeContent = fs.readFileSync(path.join(EISENHOWER_TASKS_DIR, 'maybe.md'), 'utf8');
     data.maybe = parseMaybeList(maybeContent);
   } catch (e) {
     data.maybe = { error: e.message, tasks: [], stats: {} };
@@ -344,7 +344,7 @@ async function moveTask(taskId, sourceQuadrant, targetQuadrant, insertIndex = -1
   try {
     console.log(`[Parser] Moving task ${taskId} from ${sourceQuadrant} to ${targetQuadrant} at index ${insertIndex}`);
 
-    const tasksFile = path.join(TASKS_DIR, 'tasks.md');
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
     const content = fs.readFileSync(tasksFile, 'utf8');
 
     // Parse current tasks
@@ -508,7 +508,7 @@ async function moveCustomerProject(projectId, sourceCustomer, targetCustomer, in
   try {
     console.log(`[Parser] Moving customer project ${projectId} from "${sourceCustomer}" to "${targetCustomer}" at index ${insertIndex}`);
 
-    const customerFile = path.join(TASKS_DIR, 'customer-projects.md');
+    const customerFile = path.join(EISENHOWER_TASKS_DIR, 'customer-projects.md');
     const content = fs.readFileSync(customerFile, 'utf8');
 
     // Parse current customer projects
@@ -682,7 +682,7 @@ async function deleteTask(taskId, quadrant) {
   try {
     console.log(`[Parser] Deleting task ${taskId} from ${quadrant}`);
 
-    const tasksFile = path.join(TASKS_DIR, 'tasks.md');
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
     const content = fs.readFileSync(tasksFile, 'utf8');
 
     // Parse current tasks
@@ -727,7 +727,7 @@ async function deleteCustomerProject(projectId, customerName) {
   try {
     console.log(`[Parser] Deleting project ${projectId} from "${customerName}"`);
 
-    const customerFile = path.join(TASKS_DIR, 'customer-projects.md');
+    const customerFile = path.join(EISENHOWER_TASKS_DIR, 'customer-projects.md');
     const content = fs.readFileSync(customerFile, 'utf8');
 
     // Parse current customer projects
@@ -775,7 +775,7 @@ async function deleteDelegationTask(taskId) {
   try {
     console.log(`[Parser] Deleting delegation task ${taskId}`);
 
-    const delegationFile = path.join(TASKS_DIR, 'delegation.md');
+    const delegationFile = path.join(EISENHOWER_TASKS_DIR, 'delegation.md');
     const content = fs.readFileSync(delegationFile, 'utf8');
 
     // Parse current delegation tasks
@@ -817,7 +817,7 @@ async function deleteMaybeTask(taskId) {
   try {
     console.log(`[Parser] Deleting maybe task ${taskId}`);
 
-    const maybeFile = path.join(TASKS_DIR, 'maybe.md');
+    const maybeFile = path.join(EISENHOWER_TASKS_DIR, 'maybe.md');
     const content = fs.readFileSync(maybeFile, 'utf8');
 
     // Parse current maybe tasks
@@ -956,7 +956,7 @@ async function copyTask(taskId, sourceQuadrant, target) {
   try {
     console.log(`[Parser] Copying task ${taskId} from ${sourceQuadrant} to ${target}`);
 
-    const tasksFile = path.join(TASKS_DIR, 'tasks.md');
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
     const content = fs.readFileSync(tasksFile, 'utf8');
 
     // Parse current tasks
@@ -1024,7 +1024,7 @@ async function copyCustomerProject(projectId, sourceCustomer, target) {
   try {
     console.log(`[Parser] Copying project ${projectId} from "${sourceCustomer}" to ${target}`);
 
-    const customerFile = path.join(TASKS_DIR, 'customer-projects.md');
+    const customerFile = path.join(EISENHOWER_TASKS_DIR, 'customer-projects.md');
     const customerContent = fs.readFileSync(customerFile, 'utf8');
 
     // Parse customer projects
@@ -1043,7 +1043,7 @@ async function copyCustomerProject(projectId, sourceCustomer, target) {
 
     if (target === 'delegation') {
       // Copy to delegation list
-      const delegationFile = path.join(TASKS_DIR, 'delegation.md');
+      const delegationFile = path.join(EISENHOWER_TASKS_DIR, 'delegation.md');
       const delegationContent = fs.readFileSync(delegationFile, 'utf8');
       const delegationData = parseDelegation(delegationContent);
 
@@ -1078,7 +1078,7 @@ async function copyCustomerProject(projectId, sourceCustomer, target) {
 
     } else {
       // Copy to quadrants (Q1, Q2, Q3, Q4)
-      const tasksFile = path.join(TASKS_DIR, 'tasks.md');
+      const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
       const tasksContent = fs.readFileSync(tasksFile, 'utf8');
       const tasks = parseTasks(tasksContent);
 
@@ -1138,8 +1138,8 @@ async function moveMaybeTaskToQuadrant(taskId, targetQuadrant) {
   try {
     console.log(`[Parser] Moving maybe task ${taskId} to ${targetQuadrant}`);
 
-    const maybeFile = path.join(TASKS_DIR, 'maybe.md');
-    const tasksFile = path.join(TASKS_DIR, 'tasks.md');
+    const maybeFile = path.join(EISENHOWER_TASKS_DIR, 'maybe.md');
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
     
     // Read both files
     const maybeContent = fs.readFileSync(maybeFile, 'utf8');
@@ -1221,8 +1221,8 @@ async function moveQuadrantTaskToMaybe(taskId, sourceQuadrant) {
   try {
     console.log(`[Parser] Moving task ${taskId} from ${sourceQuadrant} to Maybe List`);
 
-    const tasksFile = path.join(TASKS_DIR, 'tasks.md');
-    const maybeFile = path.join(TASKS_DIR, 'maybe.md');
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
+    const maybeFile = path.join(EISENHOWER_TASKS_DIR, 'maybe.md');
     
     // Read both files
     const tasksContent = fs.readFileSync(tasksFile, 'utf8');
@@ -1294,8 +1294,8 @@ async function copyTaskToCustomer(taskId, sourceQuadrant, targetCustomer) {
   try {
     console.log(`[Parser] Copying task ${taskId} from ${sourceQuadrant} to customer "${targetCustomer}"`);
 
-    const tasksFile = path.join(TASKS_DIR, 'tasks.md');
-    const customerFile = path.join(TASKS_DIR, 'customer-projects.md');
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
+    const customerFile = path.join(EISENHOWER_TASKS_DIR, 'customer-projects.md');
     
     // Read both files
     const tasksContent = fs.readFileSync(tasksFile, 'utf8');
@@ -1371,8 +1371,8 @@ async function moveTaskToDelegation(taskId, sourceQuadrant) {
     const taskIdNum = parseInt(taskId, 10);
     console.log(`[Parser] Moving task ${taskIdNum} from ${sourceQuadrant} to Delegation List`);
 
-    const tasksFile = path.join(TASKS_DIR, 'tasks.md');
-    const delegationFile = path.join(TASKS_DIR, 'delegation.md');
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
+    const delegationFile = path.join(EISENHOWER_TASKS_DIR, 'delegation.md');
     
     // Read both files
     const tasksContent = fs.readFileSync(tasksFile, 'utf8');
@@ -1446,8 +1446,8 @@ async function copyTaskToDelegation(taskId, sourceQuadrant) {
     const taskIdNum = parseInt(taskId, 10);
     console.log(`[Parser] Copying task ${taskIdNum} from ${sourceQuadrant} to Delegation List`);
 
-    const tasksFile = path.join(TASKS_DIR, 'tasks.md');
-    const delegationFile = path.join(TASKS_DIR, 'delegation.md');
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
+    const delegationFile = path.join(EISENHOWER_TASKS_DIR, 'delegation.md');
     
     // Read both files
     const tasksContent = fs.readFileSync(tasksFile, 'utf8');
@@ -1514,7 +1514,7 @@ async function reorderDelegationTask(taskId, insertIndex) {
   try {
     console.log(`[Parser] Reordering delegation task ${taskId} to index ${insertIndex}`);
 
-    const delegationFile = path.join(TASKS_DIR, 'delegation.md');
+    const delegationFile = path.join(EISENHOWER_TASKS_DIR, 'delegation.md');
     const content = fs.readFileSync(delegationFile, 'utf8');
 
     // Parse current delegation tasks
@@ -1566,7 +1566,7 @@ async function reorderMaybeTask(taskId, insertIndex) {
   try {
     console.log(`[Parser] Reordering maybe task ${taskId} to index ${insertIndex}`);
 
-    const maybeFile = path.join(TASKS_DIR, 'maybe.md');
+    const maybeFile = path.join(EISENHOWER_TASKS_DIR, 'maybe.md');
     const content = fs.readFileSync(maybeFile, 'utf8');
 
     // Parse current maybe tasks
@@ -1618,8 +1618,8 @@ async function completeTask(taskId, quadrant) {
   try {
     console.log(`[Parser] Completing task ${taskId} from ${quadrant}`);
 
-    const tasksFile = path.join(TASKS_DIR, 'tasks.md');
-    const archiveFile = path.join(TASKS_DIR, 'archived.md');
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
+    const archiveFile = path.join(EISENHOWER_TASKS_DIR, 'archived.md');
     
     // Read files
     const tasksContent = fs.readFileSync(tasksFile, 'utf8');
@@ -1698,8 +1698,8 @@ async function completeCustomerProject(projectId, customerName) {
   try {
     console.log(`[Parser] Completing project ${projectId} from "${customerName}"`);
 
-    const customerFile = path.join(TASKS_DIR, 'customer-projects.md');
-    const archiveFile = path.join(TASKS_DIR, 'archived.md');
+    const customerFile = path.join(EISENHOWER_TASKS_DIR, 'customer-projects.md');
+    const archiveFile = path.join(EISENHOWER_TASKS_DIR, 'archived.md');
     
     // Read files
     const customerContent = fs.readFileSync(customerFile, 'utf8');
@@ -1774,8 +1774,8 @@ async function completeDelegationTask(taskId) {
   try {
     console.log(`[Parser] Completing delegation task ${taskId}`);
 
-    const delegationFile = path.join(TASKS_DIR, 'delegation.md');
-    const archiveFile = path.join(TASKS_DIR, 'archived.md');
+    const delegationFile = path.join(EISENHOWER_TASKS_DIR, 'delegation.md');
+    const archiveFile = path.join(EISENHOWER_TASKS_DIR, 'archived.md');
     
     // Read files
     const delegationContent = fs.readFileSync(delegationFile, 'utf8');
@@ -1845,8 +1845,8 @@ async function completeMaybeTask(taskId) {
   try {
     console.log(`[Parser] Completing maybe task ${taskId}`);
 
-    const maybeFile = path.join(TASKS_DIR, 'maybe.md');
-    const archiveFile = path.join(TASKS_DIR, 'archived.md');
+    const maybeFile = path.join(EISENHOWER_TASKS_DIR, 'maybe.md');
+    const archiveFile = path.join(EISENHOWER_TASKS_DIR, 'archived.md');
     
     // Read files
     const maybeContent = fs.readFileSync(maybeFile, 'utf8');
