@@ -76,6 +76,8 @@ fi
 if [ -n "$EISENHOWER_TASKS_DIR" ]; then
     export EISENHOWER_TASKS_DIR="$EISENHOWER_TASKS_DIR"
     echo "[Dashboard] Using tasks directory: $EISENHOWER_TASKS_DIR"
+    # Ensure it's passed to the background process in daemon mode
+    ARGS+=("--tasks-dir" "$EISENHOWER_TASKS_DIR")
 fi
 
 cd "$SCRIPT_DIR"
@@ -97,7 +99,11 @@ if [ "$DAEMON_MODE" = true ]; then
     
     echo "[Dashboard] Starting in daemon mode..."
     echo "[Dashboard] Log file: $LOG_FILE"
-    nohup node server.js "${ARGS[@]}" > "$LOG_FILE" 2>&1 &
+    if [ -n "$EISENHOWER_TASKS_DIR" ]; then
+        nohup env EISENHOWER_TASKS_DIR="$EISENHOWER_TASKS_DIR" node server.js "${ARGS[@]}" > "$LOG_FILE" 2>&1 &
+    else
+        nohup node server.js "${ARGS[@]}" > "$LOG_FILE" 2>&1 &
+    fi
     PID=$!
     echo $PID > "$PID_FILE"
     
