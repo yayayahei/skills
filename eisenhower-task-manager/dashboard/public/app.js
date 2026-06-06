@@ -380,13 +380,8 @@ function initFilters() {
 function connectWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   
-  // The path depends on how express-ws is configured. Let's try the root path
-  // because in server.js we don't have a specific /ws route anymore.
-  // Wait, let's look at server.js: 
-  // expressWs(app, server);
-  // wss.on('connection', ...) is used, but we removed the manual upgrade handler.
-  // So we need to connect to the root URL.
-  const wsUrl = `${protocol}//${window.location.host}/`;
+  // The backend uses a manual upgrade handler for '/ws' attached to the HTTP server
+  const wsUrl = `${protocol}//${window.location.host}/ws`;
 
   updateConnectionStatus('connecting');
 
