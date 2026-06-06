@@ -75,6 +75,11 @@ function toggleTerminal(show) {
       setTimeout(() => {
         terminalFitAddon.fit();
         if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+          terminalWs.send(JSON.stringify({
+            type: 'resize',
+            cols: terminal.cols,
+            rows: terminal.rows
+          }));
           terminal.focus();
         }
       }, 50);
@@ -102,7 +107,12 @@ function setupTerminal() {
   terminal.loadAddon(terminalFitAddon);
   
   terminal.open(terminalElement);
-  terminalFitAddon.fit();
+  
+  // Need a small timeout to let the container render before fitting
+  setTimeout(() => {
+    terminalFitAddon.fit();
+    connectTerminalWebSocket();
+  }, 10);
   
   // Handle window resize
   window.addEventListener('resize', () => {
@@ -117,8 +127,6 @@ function setupTerminal() {
       }
     }
   });
-  
-  connectTerminalWebSocket();
 }
 
 function connectTerminalWebSocket() {
@@ -129,6 +137,13 @@ function connectTerminalWebSocket() {
   
   terminalWs.onopen = () => {
     console.log('[Terminal] Connected');
+    
+    // Send initial size
+    terminalWs.send(JSON.stringify({
+      type: 'resize',
+      cols: terminal.cols,
+      rows: terminal.rows
+    }));
     
     // Hook up terminal input to websocket
     terminal.onData(data => {

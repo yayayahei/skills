@@ -76,11 +76,25 @@ app.ws('/terminal', (ws, req) => {
   console.log('[WebSocket] Terminal Client connected');
   termClients.add(ws);
   
-  // Setup Terminal specifically for this connection if native PTY fails
-  let localPtyProcess = ptyProcess;
-  
-  // If ptyProcess is our dummy fallback object, we could try using a simple child_process.spawn
-  // but for a real terminal experience node-pty is best. For now we use what we have.
+  let localPtyProcess = null;
+  try {
+    localPtyProcess = pty.spawn(shell, [], {
+      name: 'xterm-color',
+      cols: 80,
+      rows: 24,
+      cwd: process.env.HOME || process.cwd(),
+      env: process.env
+    });
+  } catch (e) {
+    console.error('[Terminal] Failed to spawn terminal process:', e.message);
+    localPtyProcess = {
+      on: () => {},
+      write: () => {},
+      kill: () => {},
+      resize: () => {},
+      removeListener: () => {}
+    };
+  }
   
   // Send terminal output to client
   const onData = (data) => {
@@ -120,16 +134,34 @@ app.ws('/terminal', (ws, req) => {
   
   ws.on('close', () => {
     console.log('[WebSocket] Terminal Client disconnected');
-    if (localPtyProcess && typeof localPtyProcess.removeListener === 'function') {
-      localPtyProcess.removeListener('data', onData);
+    if (localPtyProcess) {
+      if (typeof localPtyProcess.removeListener === 'function') {
+        localPtyProcess.removeListener('data', onData);
+      }
+      if (typeof localPtyProcess.kill === 'function') {
+        try {
+          localPtyProcess.kill();
+        } catch(e) {
+          console.error('[Terminal] Error killing process:', e.message);
+        }
+      }
     }
     termClients.delete(ws);
   });
   
   ws.on('error', (err) => {
     console.error('[WebSocket] Terminal Error:', err);
-    if (localPtyProcess && typeof localPtyProcess.removeListener === 'function') {
-      localPtyProcess.removeListener('data', onData);
+    if (localPtyProcess) {
+      if (typeof localPtyProcess.removeListener === 'function') {
+        localPtyProcess.removeListener('data', onData);
+      }
+      if (typeof localPtyProcess.kill === 'function') {
+        try {
+          localPtyProcess.kill();
+        } catch(e) {
+          console.error('[Terminal] Error killing process:', e.message);
+        }
+      }
     }
     termClients.delete(ws);
   });
@@ -629,26 +661,17 @@ app.post('/api/maybe/complete', async (req, res) => {
 });
 
 // Setup Terminal
-const shell = process.env.SHELL || (os.platform() === 'win32' ? 'powershell.exe' : '/bin/sh');
-
-let ptyProcess = null;
-try {
-  ptyProcess = pty.spawn(shell, [], {
-    name: 'xterm-color',
-    cols: 80,
-    rows: 24,
-    cwd: process.env.HOME || process.cwd(),
-    env: process.env
-  });
-} catch (e) {
-  console.error('[Terminal] Failed to spawn terminal process:', e.message);
-  // Fallback or empty object to prevent crashing
-  ptyProcess = {
-    on: () => {},
-    write: () => {},
-    removeListener: () => {}
-  };
+let defaultShell = '/bin/bash';
+if (os.platform() === 'win32') {
+  defaultShell = 'powershell.exe';
+} else {
+  try {
+    defaultShell = os.userInfo().shell || '/bin/bash';
+  } catch (e) {
+    defaultShell = '/bin/bash';
+  }
 }
+const shell = process.env.SHELL || defaultShell;
 
 // WebSocket connection handling
 const clients = new Set();
