@@ -159,7 +159,10 @@ function initTerminal() {
 }
 
 function connectWebSocket() {
-  ws = new WebSocket(wsUrl);
+  // Use origin + pathname as the unique identifier for the terminal instance
+  const pageUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+  const connectUrl = `${wsUrl}?url=${pageUrl}`;
+  ws = new WebSocket(connectUrl);
   
   ws.onopen = () => {
     console.log('[WebTerminal] Connected to local server');
