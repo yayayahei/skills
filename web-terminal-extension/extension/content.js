@@ -194,11 +194,15 @@ function connectWebSocket() {
   };
 }
 
+const pageUrlKey = window.location.origin + window.location.pathname;
+
 function toggleTerminal(show) {
   if (!terminalContainer) injectTerminalHTML();
   
   terminalVisible = show !== undefined ? show : !terminalVisible;
-  chrome.storage.local.set({ terminalVisible });
+  
+  // Save visibility state specifically for this URL
+  chrome.storage.local.set({ [`terminalVisible_${pageUrlKey}`]: terminalVisible });
   
   if (terminalVisible) {
     terminalContainer.classList.add('show');
@@ -227,11 +231,11 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Restore state on load
-chrome.storage.local.get(['terminalVisible', 'terminalPort'], (result) => {
+chrome.storage.local.get([`terminalVisible_${pageUrlKey}`, 'terminalPort'], (result) => {
   if (result.terminalPort) {
     wsUrl = `ws://localhost:${result.terminalPort}/terminal`;
   }
-  if (result.terminalVisible) {
+  if (result[`terminalVisible_${pageUrlKey}`]) {
     toggleTerminal(true);
   }
 });
