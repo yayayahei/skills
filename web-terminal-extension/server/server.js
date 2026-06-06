@@ -94,12 +94,9 @@ app.ws('/terminal', (ws, req) => {
     console.log(`[WebSocket] Terminal client disconnected from URL: ${pageUrl}`);
     instance.clients.delete(ws);
     
-    // Clean up if no clients are left for this URL
-    if (instance.clients.size === 0) {
-      console.log(`[Terminal] No clients left for ${pageUrl}, killing process`);
-      instance.ptyProcess.kill();
-      terminalInstances.delete(pageUrl);
-    }
+    // We no longer kill the process here.
+    // The terminal will persist even if all clients disconnect.
+    // It will only be cleared when the server is restarted.
   });
 });
 
