@@ -72,97 +72,81 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
 // Terminal WebSocket endpoint
+let globalPtyProcess = null;
+let terminalHistory = '';
+const MAX_HISTORY = 100000; // Keep last 100k chars
+
 app.ws('/terminal', (ws, req) => {
   console.log('[WebSocket] Terminal Client connected');
   termClients.add(ws);
   
-  let localPtyProcess = null;
-  try {
-    localPtyProcess = pty.spawn(shell, [], {
-      name: 'xterm-color',
-      cols: 80,
-      rows: 24,
-      cwd: process.env.HOME || process.cwd(),
-      env: process.env
-    });
-  } catch (e) {
-    console.error('[Terminal] Failed to spawn terminal process:', e.message);
-    localPtyProcess = {
-      on: () => {},
-      write: () => {},
-      kill: () => {},
-      resize: () => {},
-      removeListener: () => {}
-    };
-  }
-  
-  // Send terminal output to client
-  const onData = (data) => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(data);
-    }
-  };
-  
-  if (localPtyProcess && typeof localPtyProcess.on === 'function') {
-    localPtyProcess.on('data', onData);
-    
-    // Also handle resizing
-    ws.on('message', (msg) => {
-      try {
-        const message = msg.toString();
-        if (message.startsWith('{"type":"resize"')) {
-          const size = JSON.parse(message);
-          localPtyProcess.resize(size.cols, size.rows);
-          return;
-        }
-      } catch(e) {
-        // Not a JSON message, handle as normal terminal input
-      }
+  // Lazy initialize global PTY process
+  if (!globalPtyProcess) {
+    try {
+      globalPtyProcess = pty.spawn(shell, [], {
+        name: 'xterm-color',
+        cols: 80,
+        rows: 24,
+        cwd: process.env.HOME || process.cwd(),
+        env: process.env
+      });
       
-      if (localPtyProcess && typeof localPtyProcess.write === 'function') {
-        localPtyProcess.write(msg);
-      }
-    });
-  } else {
-    // Handle terminal input from client without local process
-    ws.on('message', (msg) => {
-      if (localPtyProcess && typeof localPtyProcess.write === 'function') {
-        localPtyProcess.write(msg);
-      }
-    });
+      globalPtyProcess.on('data', (data) => {
+        terminalHistory += data;
+        if (terminalHistory.length > MAX_HISTORY) {
+          terminalHistory = terminalHistory.substring(terminalHistory.length - MAX_HISTORY);
+        }
+        
+        // Broadcast to all active terminal clients
+        termClients.forEach(clientWs => {
+          if (clientWs.readyState === WebSocket.OPEN) {
+            clientWs.send(data);
+          }
+        });
+      });
+    } catch (e) {
+      console.error('[Terminal] Failed to spawn terminal process:', e.message);
+      globalPtyProcess = {
+        write: () => {},
+        kill: () => {},
+        resize: () => {},
+        on: () => {}
+      };
+    }
   }
+  
+  // Send history to the new client
+  if (terminalHistory && ws.readyState === WebSocket.OPEN) {
+    ws.send(terminalHistory);
+  }
+  
+  // Handle client input and resize
+  ws.on('message', (msg) => {
+    try {
+      const message = msg.toString();
+      if (message.startsWith('{"type":"resize"')) {
+        const size = JSON.parse(message);
+        if (globalPtyProcess && typeof globalPtyProcess.resize === 'function') {
+          globalPtyProcess.resize(size.cols, size.rows);
+        }
+        return;
+      }
+    } catch(e) {
+      // Not a JSON message, handle as normal terminal input
+    }
+    
+    if (globalPtyProcess && typeof globalPtyProcess.write === 'function') {
+      globalPtyProcess.write(msg);
+    }
+  });
   
   ws.on('close', () => {
     console.log('[WebSocket] Terminal Client disconnected');
-    if (localPtyProcess) {
-      if (typeof localPtyProcess.removeListener === 'function') {
-        localPtyProcess.removeListener('data', onData);
-      }
-      if (typeof localPtyProcess.kill === 'function') {
-        try {
-          localPtyProcess.kill();
-        } catch(e) {
-          console.error('[Terminal] Error killing process:', e.message);
-        }
-      }
-    }
     termClients.delete(ws);
   });
   
   ws.on('error', (err) => {
     console.error('[WebSocket] Terminal Error:', err);
-    if (localPtyProcess) {
-      if (typeof localPtyProcess.removeListener === 'function') {
-        localPtyProcess.removeListener('data', onData);
-      }
-      if (typeof localPtyProcess.kill === 'function') {
-        try {
-          localPtyProcess.kill();
-        } catch(e) {
-          console.error('[Terminal] Error killing process:', e.message);
-        }
-      }
-    }
     termClients.delete(ws);
   });
 });
