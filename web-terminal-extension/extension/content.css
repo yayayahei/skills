@@ -1,0 +1,88 @@
+#web-terminal-ext-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30vh; /* Default height */
+  min-height: 100px;
+  max-height: calc(100vh - 20px);
+  background-color: #000;
+  color: #fff;
+  z-index: 2147483647; /* Max z-index to stay on top */
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.2s ease-in-out;
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+#web-terminal-ext-container.show {
+  transform: translateY(0);
+}
+
+#web-terminal-ext-resizer {
+  height: 8px;
+  background-color: #333;
+  cursor: ns-resize;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+#web-terminal-ext-resizer:hover, #web-terminal-ext-resizer.active {
+  background-color: #007acc;
+}
+
+#web-terminal-ext-resizer::after {
+  content: '';
+  display: block;
+  width: 30px;
+  height: 2px;
+  background-color: #666;
+  border-radius: 2px;
+}
+
+#web-terminal-ext-resizer:hover::after, #web-terminal-ext-resizer.active::after {
+  background-color: #fff;
+}
+
+#web-terminal-ext-header {
+  height: 30px;
+  background-color: #1e1e1e;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px;
+  user-select: none;
+  cursor: pointer;
+}
+
+#web-terminal-ext-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ccc;
+}
+
+#web-terminal-ext-close {
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+#web-terminal-ext-close:hover {
+  color: #fff;
+}
+
+#web-terminal-ext-host {
+  flex: 1;
+  padding: 5px 10px;
+  overflow: hidden;
+  background: #000;
+}
