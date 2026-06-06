@@ -250,6 +250,7 @@ A real-time web dashboard is available to view all tasks in a friendly format.
 - ⚡ Real-time updates via WebSocket when markdown files change
 - 📱 Responsive layout for different screen sizes
 - 💡 **Hover to see full task details** - Mouse over any task card to see complete information including description, subtasks, tags, and timestamps
+- 💻 **Integrated Terminal** - A built-in, resizable web terminal with automatic shell detection and history persistence across page reloads
 
 ### Dashboard Launch Workflow
 
