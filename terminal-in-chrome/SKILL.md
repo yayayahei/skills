@@ -1,5 +1,5 @@
 ---
-name: web-terminal
+name: terminal-in-chrome
 description: Manages the Web Terminal Chrome Extension local backend server. Use this skill to start, stop, or check the status of the local terminal server running on port 8989.
 ---
 
