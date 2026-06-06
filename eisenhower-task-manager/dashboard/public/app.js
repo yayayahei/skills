@@ -82,6 +82,37 @@ function initTerminalResizer() {
     container.style.height = `${savedHeight}px`;
   }
   
+  // Double click header to maximize/restore
+  const header = document.querySelector('.terminal-header');
+  let isMaximized = false;
+  let preMaxHeight = '';
+  
+  if (header) {
+    header.addEventListener('dblclick', () => {
+      if (!isMaximized) {
+        preMaxHeight = container.style.height || '30%';
+        container.style.height = 'calc(100vh - 60px)';
+        isMaximized = true;
+      } else {
+        container.style.height = preMaxHeight;
+        isMaximized = false;
+      }
+      
+      // Save and refit
+      setTimeout(() => {
+        localStorage.setItem('eisenhower_terminal_height', container.getBoundingClientRect().height);
+        if (terminalFitAddon && terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+          terminalFitAddon.fit();
+          terminalWs.send(JSON.stringify({
+            type: 'resize',
+            cols: terminal.cols,
+            rows: terminal.rows
+          }));
+        }
+      }, 10);
+    });
+  }
+  
   resizer.addEventListener('mousedown', (e) => {
     isResizing = true;
     startY = e.clientY;
