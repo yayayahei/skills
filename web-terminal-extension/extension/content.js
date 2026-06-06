@@ -222,21 +222,35 @@ function toggleTerminal(show) {
   }
 }
 
-// Listen for keyboard shortcuts (Ctrl+` or Cmd+j)
-document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey && e.key === '`') || (e.metaKey && e.key === 'j')) {
-    e.preventDefault();
-    toggleTerminal();
-  }
-});
+let isSiteBlocked = false;
 
-// Restore state on load
-chrome.storage.local.get([`terminalVisible_${pageUrlKey}`, 'terminalPort'], (result) => {
+// Check if current site is blocked
+chrome.storage.local.get([`terminalVisible_${pageUrlKey}`, 'terminalPort', 'blockedSites'], (result) => {
+  if (result.blockedSites && Array.isArray(result.blockedSites)) {
+    const hostname = window.location.hostname;
+    isSiteBlocked = result.blockedSites.some(site => {
+      // Check for exact match or subdomain match
+      return hostname === site || hostname.endsWith(`.${site}`);
+    });
+  }
+  
+  if (isSiteBlocked) return;
+  
   if (result.terminalPort) {
     wsUrl = `ws://localhost:${result.terminalPort}/terminal`;
   }
   if (result[`terminalVisible_${pageUrlKey}`]) {
     toggleTerminal(true);
+  }
+});
+
+// Listen for keyboard shortcuts (Ctrl+` or Cmd+j)
+document.addEventListener('keydown', (e) => {
+  if (isSiteBlocked) return;
+  
+  if ((e.ctrlKey && e.key === '`') || (e.metaKey && e.key === 'j')) {
+    e.preventDefault();
+    toggleTerminal();
   }
 });
 

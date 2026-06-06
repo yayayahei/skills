@@ -1,22 +1,35 @@
 document.addEventListener('DOMContentLoaded', () => {
   const portInput = document.getElementById('portInput');
+  const blockedSitesInput = document.getElementById('blockedSitesInput');
   const saveBtn = document.getElementById('saveBtn');
   const statusEl = document.getElementById('status');
 
-  // Load current port
-  chrome.storage.local.get(['terminalPort'], (result) => {
+  // Load current settings
+  chrome.storage.local.get(['terminalPort', 'blockedSites'], (result) => {
     if (result.terminalPort) {
       portInput.value = result.terminalPort;
     } else {
       portInput.value = '8989';
     }
+    
+    if (result.blockedSites && Array.isArray(result.blockedSites)) {
+      blockedSitesInput.value = result.blockedSites.join('\n');
+    }
   });
 
-  // Save port
+  // Save settings
   saveBtn.addEventListener('click', () => {
     const port = portInput.value || '8989';
+    const blockedSitesText = blockedSitesInput.value.trim();
     
-    chrome.storage.local.set({ terminalPort: port }, () => {
+    const blockedSites = blockedSitesText 
+      ? blockedSitesText.split('\n').map(s => s.trim()).filter(s => s)
+      : [];
+    
+    chrome.storage.local.set({ 
+      terminalPort: port,
+      blockedSites: blockedSites
+    }, () => {
       // Show status
       statusEl.style.display = 'block';
       setTimeout(() => {

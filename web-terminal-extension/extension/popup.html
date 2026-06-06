@@ -16,12 +16,16 @@
       font-size: 14px;
       color: #333;
     }
-    input {
+    input, textarea {
       width: 100%;
       padding: 6px;
       border: 1px solid #ccc;
       border-radius: 4px;
       box-sizing: border-box;
+      font-family: inherit;
+    }
+    textarea {
+      resize: vertical;
     }
     button {
       width: 100%;
@@ -49,8 +53,14 @@
     <label for="portInput">Terminal Server Port:</label>
     <input type="number" id="portInput" placeholder="8989" min="1" max="65535">
   </div>
-  <button id="saveBtn">Save Port</button>
-  <div id="status">Port saved successfully!</div>
+  
+  <div class="form-group">
+    <label for="blockedSitesInput">Blocked Sites (one per line, e.g. google.com):</label>
+    <textarea id="blockedSitesInput" rows="4" placeholder="google.com&#10;github.com"></textarea>
+  </div>
+  
+  <button id="saveBtn">Save Settings</button>
+  <div id="status">Settings saved successfully!</div>
   
   <script src="popup.js"></script>
 </body>
