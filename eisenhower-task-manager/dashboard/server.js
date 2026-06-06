@@ -117,7 +117,15 @@ app.ws('/terminal', (ws, req) => {
   
   // Send history to the new client
   if (terminalHistory && ws.readyState === WebSocket.OPEN) {
-    ws.send(terminalHistory);
+    // Clean terminal history to remove query escape sequences (like color or cursor position queries).
+    // If we replay these queries to a new xterm.js instance, it will automatically respond to them
+    // over the WebSocket, which results in garbage text being printed at the shell prompt.
+    const cleanHistory = terminalHistory
+      .replace(/\x1b\]1[01];\?(?:\x07|\x1b\\)/g, '') // OSC 10/11 color queries
+      .replace(/\x1b\[[>?]*[0-9]*c/g, '')            // Device Attributes queries
+      .replace(/\x1b\[6n/g, '');                     // Cursor position queries
+      
+    ws.send(cleanHistory);
   }
   
   // Handle client input and resize
