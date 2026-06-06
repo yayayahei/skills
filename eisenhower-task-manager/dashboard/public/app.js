@@ -25,10 +25,146 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initFilters();
   initLanguageSwitcher();
+  initTerminal();
   connectWebSocket();
   // Initial data load via fetch as fallback
   fetchInitialData();
 });
+
+// Terminal State
+let terminal = null;
+let terminalFitAddon = null;
+let terminalWs = null;
+let terminalVisible = false;
+
+// Initialize Terminal
+function initTerminal() {
+  const terminalContainer = document.getElementById('terminalContainer');
+  const terminalElement = document.getElementById('terminal');
+  const toggleBtn = document.getElementById('terminalToggleBtn');
+  const closeBtn = document.getElementById('terminalCloseBtn');
+  
+  if (!terminalElement || !toggleBtn || !closeBtn) return;
+  
+  // Toggle button handler
+  toggleBtn.addEventListener('click', () => {
+    toggleTerminal();
+  });
+  
+  // Close button handler
+  closeBtn.addEventListener('click', () => {
+    toggleTerminal(false);
+  });
+}
+
+function toggleTerminal(show) {
+  const terminalContainer = document.getElementById('terminalContainer');
+  const toggleBtn = document.getElementById('terminalToggleBtn');
+  
+  terminalVisible = show !== undefined ? show : !terminalVisible;
+  
+  if (terminalVisible) {
+    terminalContainer.classList.add('show');
+    toggleBtn.classList.add('active');
+    
+    // Lazy initialize terminal
+    if (!terminal) {
+      setupTerminal();
+    } else {
+      // Re-fit when shown
+      setTimeout(() => {
+        terminalFitAddon.fit();
+        if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+          terminal.focus();
+        }
+      }, 50);
+    }
+  } else {
+    terminalContainer.classList.remove('show');
+    toggleBtn.classList.remove('active');
+  }
+}
+
+function setupTerminal() {
+  const terminalElement = document.getElementById('terminal');
+  
+  terminal = new window.Terminal({
+    cursorBlink: true,
+    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+    fontSize: 14,
+    theme: {
+      background: '#000000',
+      foreground: '#e6edf3'
+    }
+  });
+  
+  terminalFitAddon = new window.FitAddon.FitAddon();
+  terminal.loadAddon(terminalFitAddon);
+  
+  terminal.open(terminalElement);
+  terminalFitAddon.fit();
+  
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    if (terminalVisible && terminalFitAddon) {
+      terminalFitAddon.fit();
+      if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+        terminalWs.send(JSON.stringify({
+          type: 'resize',
+          cols: terminal.cols,
+          rows: terminal.rows
+        }));
+      }
+    }
+  });
+  
+  connectTerminalWebSocket();
+}
+
+function connectTerminalWebSocket() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}/terminal`;
+  
+  terminalWs = new WebSocket(wsUrl);
+  
+  terminalWs.onopen = () => {
+    console.log('[Terminal] Connected');
+    
+    // Hook up terminal input to websocket
+    terminal.onData(data => {
+      if (terminalWs.readyState === WebSocket.OPEN) {
+        terminalWs.send(data);
+      }
+    });
+  };
+  
+  terminalWs.onmessage = (event) => {
+    // Write websocket data to terminal
+    if (event.data instanceof Blob) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        terminal.write(reader.result);
+      };
+      reader.readAsText(event.data);
+    } else {
+      terminal.write(event.data);
+    }
+  };
+  
+  terminalWs.onclose = () => {
+    console.log('[Terminal] Disconnected');
+    terminal.write('\r\n\x1b[31m[Terminal Connection Closed]\x1b[0m\r\n');
+    
+    // Try to reconnect if terminal is still visible
+    if (terminalVisible) {
+      setTimeout(connectTerminalWebSocket, 3000);
+    }
+  };
+  
+  terminalWs.onerror = (error) => {
+    console.error('[Terminal] Error:', error);
+  };
+}
 
 // Initialize language switcher
 function initLanguageSwitcher() {
@@ -118,7 +254,7 @@ function initFilters() {
 // WebSocket connection
 function connectWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}`;
+  const wsUrl = `${protocol}//${window.location.host}/ws`;
 
   updateConnectionStatus('connecting');
 

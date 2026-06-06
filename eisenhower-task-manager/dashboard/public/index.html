@@ -5,31 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Eisenhower Task Dashboard</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="style.css?v=27">
+  <link rel="stylesheet" href="style.css?v=28">
+  <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css" />
+  <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
 </head>
 <body>
-  <div class="app">
-    <header class="header">
-      <h1 data-i18n="title">📊 Eisenhower Task Dashboard</h1>
-      <div class="header-right">
-        <div class="language-switcher">
-          <button class="lang-btn" id="langBtn" data-current="en">
-            <span class="lang-icon">🌐</span>
-            <span class="lang-text">EN</span>
+  <div class="app-container">
+    <div class="app">
+      <header class="header">
+        <h1 data-i18n="title">📊 Eisenhower Task Dashboard</h1>
+        <div class="header-right">
+          <div class="language-switcher">
+            <button class="lang-btn" id="langBtn" data-current="en">
+              <span class="lang-icon">🌐</span>
+              <span class="lang-text">EN</span>
+            </button>
+            <div class="lang-dropdown" id="langDropdown">
+              <button class="lang-option" data-lang="en" data-i18n="lang_en">English</button>
+              <button class="lang-option" data-lang="zh-CN" data-i18n="lang_zh">中文</button>
+            </div>
+          </div>
+          <button class="terminal-toggle-btn" id="terminalToggleBtn" title="Toggle Terminal">
+            💻
           </button>
-          <div class="lang-dropdown" id="langDropdown">
-            <button class="lang-option" data-lang="en" data-i18n="lang_en">English</button>
-            <button class="lang-option" data-lang="zh-CN" data-i18n="lang_zh">中文</button>
+          <div class="connection-status" id="connectionStatus">
+            <span class="status-dot"></span>
+            <span class="status-text" data-i18n="status_connecting">Connecting...</span>
           </div>
         </div>
-        <div class="connection-status" id="connectionStatus">
-          <span class="status-dot"></span>
-          <span class="status-text" data-i18n="status_connecting">Connecting...</span>
-        </div>
-      </div>
-    </header>
+      </header>
 
-    <div class="stats-bar" id="statsBar">
+      <div class="stats-bar" id="statsBar">
       <div class="stat-card q1">
         <div class="stat-value" id="q1Count">-</div>
         <div class="stat-label" data-i18n="q1_label">🔥 Q1 Urgent & Important</div>
@@ -133,9 +140,18 @@
     <footer class="footer">
       <p><span data-i18n="last_updated">Last updated:</span> <span id="lastUpdate">-</span></p>
     </footer>
+    </div>
+    
+    <div class="terminal-container" id="terminalContainer">
+      <div class="terminal-header">
+        <span class="terminal-title">Terminal</span>
+        <button class="terminal-close-btn" id="terminalCloseBtn">×</button>
+      </div>
+      <div id="terminal"></div>
+    </div>
   </div>
 
   <script src="i18n.js?v=8"></script>
-  <script src="app.js?v=26"></script>
+  <script src="app.js?v=27"></script>
 </body>
 </html>

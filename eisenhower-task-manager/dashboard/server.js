@@ -4,11 +4,14 @@
  */
 
 const express = require('express');
+const expressWs = require('express-ws');
 const http = require('http');
 const WebSocket = require('ws');
 const chokidar = require('chokidar');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+const pty = require('node-pty');
 const { 
   loadAllTasks, 
   moveTask, 
@@ -50,11 +53,87 @@ function parseArgs() {
 const { port } = parseArgs();
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+expressWs(app, server);
+
+const wss = new WebSocket.Server({ noServer: true });
+
+// Attach wss to server upgrade
+server.on('upgrade', (request, socket, head) => {
+  if (request.url === '/ws') {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  }
+});
 
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+
+// Terminal WebSocket endpoint
+app.ws('/terminal', (ws, req) => {
+  console.log('[WebSocket] Terminal Client connected');
+  termClients.add(ws);
+  
+  // Setup Terminal specifically for this connection if native PTY fails
+  let localPtyProcess = ptyProcess;
+  
+  // If ptyProcess is our dummy fallback object, we could try using a simple child_process.spawn
+  // but for a real terminal experience node-pty is best. For now we use what we have.
+  
+  // Send terminal output to client
+  const onData = (data) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(data);
+    }
+  };
+  
+  if (localPtyProcess && typeof localPtyProcess.on === 'function') {
+    localPtyProcess.on('data', onData);
+    
+    // Also handle resizing
+    ws.on('message', (msg) => {
+      try {
+        const message = msg.toString();
+        if (message.startsWith('{"type":"resize"')) {
+          const size = JSON.parse(message);
+          localPtyProcess.resize(size.cols, size.rows);
+          return;
+        }
+      } catch(e) {
+        // Not a JSON message, handle as normal terminal input
+      }
+      
+      if (localPtyProcess && typeof localPtyProcess.write === 'function') {
+        localPtyProcess.write(msg);
+      }
+    });
+  } else {
+    // Handle terminal input from client without local process
+    ws.on('message', (msg) => {
+      if (localPtyProcess && typeof localPtyProcess.write === 'function') {
+        localPtyProcess.write(msg);
+      }
+    });
+  }
+  
+  ws.on('close', () => {
+    console.log('[WebSocket] Terminal Client disconnected');
+    if (localPtyProcess && typeof localPtyProcess.removeListener === 'function') {
+      localPtyProcess.removeListener('data', onData);
+    }
+    termClients.delete(ws);
+  });
+  
+  ws.on('error', (err) => {
+    console.error('[WebSocket] Terminal Error:', err);
+    if (localPtyProcess && typeof localPtyProcess.removeListener === 'function') {
+      localPtyProcess.removeListener('data', onData);
+    }
+    termClients.delete(ws);
+  });
+});
 
 // API endpoint to get all tasks
 app.get('/api/tasks', (req, res) => {
@@ -549,11 +628,35 @@ app.post('/api/maybe/complete', async (req, res) => {
   }
 });
 
+// Setup Terminal
+const shell = process.env.SHELL || (os.platform() === 'win32' ? 'powershell.exe' : '/bin/sh');
+
+let ptyProcess = null;
+try {
+  ptyProcess = pty.spawn(shell, [], {
+    name: 'xterm-color',
+    cols: 80,
+    rows: 24,
+    cwd: process.env.HOME || process.cwd(),
+    env: process.env
+  });
+} catch (e) {
+  console.error('[Terminal] Failed to spawn terminal process:', e.message);
+  // Fallback or empty object to prevent crashing
+  ptyProcess = {
+    on: () => {},
+    write: () => {},
+    removeListener: () => {}
+  };
+}
+
 // WebSocket connection handling
 const clients = new Set();
+const termClients = new Set();
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
   console.log('[WebSocket] Client connected');
+  
   clients.add(ws);
 
   // Send initial data

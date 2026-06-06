@@ -34,13 +34,24 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
 }
 
 .app {
-  max-width: 1600px;
-  margin: 0 auto;
+  flex: 1;
+  width: 100%;
   padding: 12px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header - Compact */
@@ -1730,4 +1741,87 @@ body {
 
 .custom-confirm-ok:hover {
   background: #c92a2a;
+}
+
+/* Terminal Styles */
+.terminal-toggle-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.terminal-toggle-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-muted);
+}
+
+.terminal-toggle-btn.active {
+  background: var(--bg-tertiary);
+  border-color: var(--customer-color);
+  box-shadow: inset 0 0 0 1px var(--customer-color);
+}
+
+.terminal-container {
+  display: none;
+  flex-direction: column;
+  height: 30%;
+  min-height: 200px;
+  max-height: 80%;
+  border-top: 1px solid var(--border-color);
+  background: #000;
+  position: relative;
+}
+
+.terminal-container.show {
+  display: flex;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  cursor: ns-resize; /* For future resizability */
+}
+
+.terminal-title {
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: var(--text-muted);
+}
+
+.terminal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.terminal-close-btn:hover {
+  color: var(--text-primary);
+}
+
+#terminal {
+  flex: 1;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
