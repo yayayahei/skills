@@ -61,6 +61,76 @@ function initTerminal() {
   if (savedState === 'true') {
     toggleTerminal(true);
   }
+  
+  // Terminal Resize Logic
+  initTerminalResizer();
+}
+
+function initTerminalResizer() {
+  const container = document.getElementById('terminalContainer');
+  const resizer = document.getElementById('terminalResizer');
+  
+  if (!container || !resizer) return;
+  
+  let isResizing = false;
+  let startY;
+  let startHeight;
+  
+  // Also restore saved height if available
+  const savedHeight = localStorage.getItem('eisenhower_terminal_height');
+  if (savedHeight) {
+    container.style.height = `${savedHeight}px`;
+  }
+  
+  resizer.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startY = e.clientY;
+    startHeight = container.getBoundingClientRect().height;
+    
+    // Add visual feedback
+    resizer.classList.add('active');
+    document.body.style.cursor = 'ns-resize';
+    
+    // Prevent text selection while dragging
+    e.preventDefault();
+  });
+  
+  window.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    
+    // Calculate new height (drag up = increase height)
+    const dy = startY - e.clientY;
+    const newHeight = startHeight + dy;
+    
+    // Let CSS min/max height handle the boundaries, just set the value
+    container.style.height = `${newHeight}px`;
+    
+    // Continually fit the terminal as it resizes
+    if (terminalFitAddon) {
+      terminalFitAddon.fit();
+    }
+  });
+  
+  window.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      resizer.classList.remove('active');
+      document.body.style.cursor = '';
+      
+      // Save final height
+      localStorage.setItem('eisenhower_terminal_height', container.getBoundingClientRect().height);
+      
+      // Do one final precise fit and notify server
+      if (terminalFitAddon && terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+        terminalFitAddon.fit();
+        terminalWs.send(JSON.stringify({
+          type: 'resize',
+          cols: terminal.cols,
+          rows: terminal.rows
+        }));
+      }
+    }
+  });
 }
 
 function toggleTerminal(show) {
@@ -278,7 +348,14 @@ function initFilters() {
 // WebSocket connection
 function connectWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}/ws`;
+  
+  // The path depends on how express-ws is configured. Let's try the root path
+  // because in server.js we don't have a specific /ws route anymore.
+  // Wait, let's look at server.js: 
+  // expressWs(app, server);
+  // wss.on('connection', ...) is used, but we removed the manual upgrade handler.
+  // So we need to connect to the root URL.
+  const wsUrl = `${protocol}//${window.location.host}/`;
 
   updateConnectionStatus('connecting');
 

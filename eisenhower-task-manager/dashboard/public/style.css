@@ -1772,16 +1772,44 @@ body {
 .terminal-container {
   display: none;
   flex-direction: column;
-  height: 30%;
-  min-height: 200px;
-  max-height: 80%;
+  height: 30%; /* Default initial height */
+  min-height: 100px;
+  max-height: calc(100vh - 60px); /* Allow almost full screen */
   border-top: 1px solid var(--border-color);
   background: #000;
   position: relative;
+  z-index: 100;
 }
 
 .terminal-container.show {
   display: flex;
+}
+
+.terminal-resizer {
+  height: 6px;
+  width: 100%;
+  background: var(--border-color);
+  cursor: ns-resize;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.terminal-resizer:hover, .terminal-resizer.active {
+  background: var(--customer-color);
+}
+
+.terminal-resizer::after {
+  content: "≡";
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 6px;
+  margin-top: -2px;
 }
 
 .terminal-header {
@@ -1791,7 +1819,7 @@ body {
   padding: 4px 12px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  cursor: ns-resize; /* For future resizability */
+  margin-top: 6px; /* Space for the resizer */
 }
 
 .terminal-title {
