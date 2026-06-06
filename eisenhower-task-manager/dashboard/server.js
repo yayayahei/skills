@@ -55,17 +55,6 @@ const app = express();
 const server = http.createServer(app);
 expressWs(app, server);
 
-const wss = new WebSocket.Server({ noServer: true });
-
-// Attach wss to server upgrade
-server.on('upgrade', (request, socket, head) => {
-  if (request.url === '/ws') {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
-    });
-  }
-});
-
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -669,7 +658,7 @@ const shell = process.env.SHELL || defaultShell;
 const clients = new Set();
 const termClients = new Set();
 
-wss.on('connection', (ws, req) => {
+app.ws('/ws', (ws, req) => {
   console.log('[WebSocket] Client connected');
   
   clients.add(ws);
