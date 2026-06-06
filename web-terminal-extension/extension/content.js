@@ -227,9 +227,17 @@ let isSiteBlocked = false;
 // Check if current site is blocked
 chrome.storage.local.get([`terminalVisible_${pageUrlKey}`, 'terminalPort', 'blockedSites'], (result) => {
   if (result.blockedSites && Array.isArray(result.blockedSites)) {
+    const origin = window.location.origin;
     const hostname = window.location.hostname;
+    
     isSiteBlocked = result.blockedSites.some(site => {
-      // Check for exact match or subdomain match
+      // Check if site includes protocol/port (e.g. http://localhost:18080)
+      if (site.startsWith('http://') || site.startsWith('https://')) {
+        // Match exact origin, or origin + trailing slash, or origin + path prefix
+        return origin === site || origin + '/' === site || window.location.href.startsWith(site);
+      }
+      
+      // If no protocol/port, fallback to hostname matching (e.g. google.com)
       return hostname === site || hostname.endsWith(`.${site}`);
     });
   }
