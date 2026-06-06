@@ -55,6 +55,12 @@ function initTerminal() {
   closeBtn.addEventListener('click', () => {
     toggleTerminal(false);
   });
+  
+  // Restore state from localStorage
+  const savedState = localStorage.getItem('eisenhower_terminal_visible');
+  if (savedState === 'true') {
+    toggleTerminal(true);
+  }
 }
 
 function toggleTerminal(show) {
@@ -62,6 +68,9 @@ function toggleTerminal(show) {
   const toggleBtn = document.getElementById('terminalToggleBtn');
   
   terminalVisible = show !== undefined ? show : !terminalVisible;
+  
+  // Save state
+  localStorage.setItem('eisenhower_terminal_visible', terminalVisible);
   
   if (terminalVisible) {
     terminalContainer.classList.add('show');
