@@ -56,6 +56,15 @@ function initTerminal() {
     toggleTerminal(false);
   });
   
+  // Keyboard shortcut to toggle terminal (Ctrl+` or Cmd+j like VS Code)
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+` or Cmd+j
+    if ((e.ctrlKey && e.key === '`') || (e.metaKey && e.key === 'j')) {
+      e.preventDefault();
+      toggleTerminal();
+    }
+  });
+  
   // Restore state from localStorage
   const savedState = localStorage.getItem('eisenhower_terminal_visible');
   if (savedState === 'true') {
