@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Web Terminal Injector",
+  "name": "terminal-in-chrome",
   "version": "1.0.0",
   "description": "Injects a local terminal into any website.",
   "permissions": [
