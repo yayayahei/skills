@@ -16,7 +16,7 @@ let isProcessing = false;
 let bubbleContainer = null;
 let isFirstMessage = true;
 let outputTimeout = null;
-let titleObserver = null;
+
 
 function injectBubbleHTML() {
   if (document.getElementById('web-terminal-ext-bubble')) return;
@@ -44,23 +44,6 @@ function updateBubble() {
     bubbleContainer.classList.remove('active');
   }
 }
-
-function observeTitle() {
-  if (titleObserver) titleObserver.disconnect();
-  const titleEl = document.querySelector('title');
-  if (titleEl) {
-    titleObserver = new MutationObserver(() => {
-      if (hasUnreadOutput && (!terminalVisible || document.hidden)) {
-        const prefixRegex = /^\((•|!)\) /;
-        if (!prefixRegex.test(document.title)) {
-          updateTitleIndicator();
-        }
-      }
-    });
-    titleObserver.observe(titleEl, { childList: true, characterData: true });
-  }
-}
-
 
 let originalFavicons = null;
 let faviconInterval = null;
@@ -169,32 +152,6 @@ function setFavicon(status) {
     drawFavicon(status);
     chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'done' }).catch(() => {});
   }
-}
-
-function updateTitleIndicator() {
-  const prefixRegex = /^\((•|!)\) /;
-  let newTitle = document.title.replace(prefixRegex, '');
-  
-  let status = 'clear';
-  if (hasUnreadOutput && (!terminalVisible || document.hidden)) {
-    status = isProcessing ? 'processing' : 'done';
-    const prefix = isProcessing ? '(•) ' : '(!) ';
-    newTitle = prefix + newTitle;
-  }
-  
-  if (document.title !== newTitle) {
-    if (titleObserver) titleObserver.disconnect();
-    document.title = newTitle;
-    observeTitle();
-  }
-  
-  setFavicon(status);
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', observeTitle);
-} else {
-  observeTitle();
 }
 
 function injectTerminalHTML() {
@@ -370,8 +327,8 @@ function connectWebSocket() {
       isProcessing = true;
       
       updateBubble();
-      updateTitleIndicator();
-      
+      setFavicon('processing');
+            
       
       if (bubbleContainer) {
         bubbleContainer.classList.add('processing');
@@ -385,8 +342,8 @@ function connectWebSocket() {
           bubbleContainer.classList.remove('processing');
           bubbleContainer.classList.add('done');
         }
-        updateTitleIndicator();
-        
+        setFavicon('done');
+                
       }, 1000);
     }
 
@@ -430,8 +387,8 @@ function toggleTerminal(show) {
       }
       
       updateBubble();
-      updateTitleIndicator();
-      
+      setFavicon('clear');
+            
     }
     
     terminalContainer.classList.add('show');
@@ -514,7 +471,7 @@ document.addEventListener('visibilitychange', () => {
     }
     
     updateBubble();
-    updateTitleIndicator();
-    
+    setFavicon('clear');
+        
   }
 });
