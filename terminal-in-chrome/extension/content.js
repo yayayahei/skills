@@ -36,7 +36,7 @@ function injectBubbleHTML() {
 function updateBubble() {
   if (!bubbleContainer) injectBubbleHTML();
   
-  if (hasUnreadOutput && !terminalVisible) {
+  if (hasUnreadOutput && (!terminalVisible || document.hidden)) {
     bubbleContainer.classList.add('show');
     bubbleContainer.classList.add('active');
   } else {
@@ -50,8 +50,8 @@ function observeTitle() {
   const titleEl = document.querySelector('title');
   if (titleEl) {
     titleObserver = new MutationObserver(() => {
-      if (hasUnreadOutput && !terminalVisible) {
-        const prefixRegex = /^\((•|✓)\) /;
+      if (hasUnreadOutput && (!terminalVisible || document.hidden)) {
+        const prefixRegex = /^\((•|!)\) /;
         if (!prefixRegex.test(document.title)) {
           updateTitleIndicator();
         }
@@ -109,9 +109,9 @@ function setFavicon(status) {
   
   let svg = '';
   if (status === 'processing') {
-    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#FF9800"/><circle cx="10" cy="16" r="2" fill="#fff"/><circle cx="16" cy="16" r="2" fill="#fff"/><circle cx="22" cy="16" r="2" fill="#fff"/></svg>';
-  } else if (status === 'done') {
-    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#4CAF50"/><path d="M9 16l5 5 9-10" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#03A9F4"/><circle cx="10" cy="16" r="2" fill="#fff"/><circle cx="16" cy="16" r="2" fill="#fff"/><circle cx="22" cy="16" r="2" fill="#fff"/></svg>';
+  } else if (status === 'waiting') {
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#F44336"/><rect x="14" y="10" width="4" height="12" fill="#fff"/></svg>';
   }
   
   const link = document.createElement('link');
@@ -122,13 +122,13 @@ function setFavicon(status) {
 }
 
 function updateTitleIndicator() {
-  const prefixRegex = /^\((•|✓)\) /;
+  const prefixRegex = /^\((•|!)\) /;
   let newTitle = document.title.replace(prefixRegex, '');
   
   let status = 'clear';
-  if (hasUnreadOutput && !terminalVisible) {
-    status = isProcessing ? 'processing' : 'done';
-    const prefix = isProcessing ? '(•) ' : '(✓) ';
+  if (hasUnreadOutput && (!terminalVisible || document.hidden)) {
+    status = isProcessing ? 'processing' : 'waiting';
+    const prefix = isProcessing ? '(•) ' : '(!) ';
     newTitle = prefix + newTitle;
   }
   
@@ -315,7 +315,7 @@ function connectWebSocket() {
   ws.onmessage = (event) => {
     if (isFirstMessage) {
       isFirstMessage = false;
-    } else if (!terminalVisible) {
+    } else if (!terminalVisible || document.hidden) {
       hasUnreadOutput = true;
       isProcessing = true;
       
@@ -325,6 +325,7 @@ function connectWebSocket() {
       
       if (bubbleContainer) {
         bubbleContainer.classList.add('processing');
+        bubbleContainer.classList.remove('waiting');
       }
       
       clearTimeout(outputTimeout);
@@ -332,9 +333,10 @@ function connectWebSocket() {
         isProcessing = false;
         if (bubbleContainer) {
           bubbleContainer.classList.remove('processing');
+          bubbleContainer.classList.add('waiting');
         }
         updateTitleIndicator();
-        chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'done' }).catch(() => {});
+        chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'waiting' }).catch(() => {});
       }, 1000);
     }
 
@@ -367,12 +369,20 @@ function toggleTerminal(show) {
   chrome.storage.local.set({ [`terminalVisible_${pageUrlKey}`]: terminalVisible });
   
   if (terminalVisible) {
-    hasUnreadOutput = false;
-    isProcessing = false;
-    clearTimeout(outputTimeout);
-    updateBubble();
-    updateTitleIndicator();
-    chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'clear' }).catch(() => {});
+    if (!document.hidden) {
+      hasUnreadOutput = false;
+      isProcessing = false;
+      clearTimeout(outputTimeout);
+      
+      if (bubbleContainer) {
+        bubbleContainer.classList.remove('processing');
+        bubbleContainer.classList.remove('waiting');
+      }
+      
+      updateBubble();
+      updateTitleIndicator();
+      chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'clear' }).catch(() => {});
+    }
     
     terminalContainer.classList.add('show');
     if (!terminal) {
@@ -438,5 +448,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (ws) {
       ws.close(); // Will auto-reconnect via onclose handler
     }
+  }
+});
+
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && terminalVisible) {
+    hasUnreadOutput = false;
+    isProcessing = false;
+    clearTimeout(outputTimeout);
+    
+    if (bubbleContainer) {
+      bubbleContainer.classList.remove('processing');
+      bubbleContainer.classList.remove('waiting');
+    }
+    
+    updateBubble();
+    updateTitleIndicator();
+    chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'clear' }).catch(() => {});
   }
 });
