@@ -6,6 +6,9 @@ repository: https://github.com/yayayahei/skills/tree/main/terminal-in-chrome
 
 # Web Terminal Extension Skill
 
+## Repository
+[https://github.com/yayayahei/skills/tree/main/terminal-in-chrome](https://github.com/yayayahei/skills/tree/main/terminal-in-chrome)
+
 ## Overview
 This skill manages the local backend server for the Web Terminal Chrome Extension, which injects a fully functional, resizable local terminal into any website via `xterm.js`.
 
