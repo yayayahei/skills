@@ -135,9 +135,9 @@
   animation: terminal-ext-blink 1s infinite;
 }
 
-#web-terminal-ext-bubble.active.waiting::after {
-  background-color: #FF9800;
-  box-shadow: none;
+#web-terminal-ext-bubble.active.done::after {
+  background-color: #4CAF50;
+  box-shadow: 0 0 10px 2px rgba(76, 175, 80, 0.8);
   animation: none;
 }
 

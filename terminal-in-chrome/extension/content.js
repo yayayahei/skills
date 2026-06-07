@@ -115,14 +115,21 @@ function drawFavicon(status) {
       ctx.arc(16, 16, 12, 0, Math.PI * 2);
       ctx.fill();
     }
-  } else if (status === 'waiting') {
-    ctx.fillStyle = '#FF9800'; // Orange for waiting
+  } else if (status === 'done') {
+    ctx.fillStyle = '#4CAF50'; // Green for done
     ctx.beginPath();
     ctx.arc(16, 16, 14, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(11, 10, 4, 12);
-    ctx.fillRect(17, 10, 4, 12);
+    
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(10, 16);
+    ctx.lineTo(14, 20);
+    ctx.lineTo(22, 11);
+    ctx.stroke();
   }
   
   const link = document.createElement('link');
@@ -160,7 +167,7 @@ function setFavicon(status) {
   } else {
     if (faviconInterval) { clearInterval(faviconInterval); faviconInterval = null; }
     drawFavicon(status);
-    chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'waiting' }).catch(() => {});
+    chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'done' }).catch(() => {});
   }
 }
 
@@ -170,7 +177,7 @@ function updateTitleIndicator() {
   
   let status = 'clear';
   if (hasUnreadOutput && (!terminalVisible || document.hidden)) {
-    status = isProcessing ? 'processing' : 'waiting';
+    status = isProcessing ? 'processing' : 'done';
     const prefix = isProcessing ? '(•) ' : '(!) ';
     newTitle = prefix + newTitle;
   }
@@ -368,7 +375,7 @@ function connectWebSocket() {
       
       if (bubbleContainer) {
         bubbleContainer.classList.add('processing');
-        bubbleContainer.classList.remove('waiting');
+        bubbleContainer.classList.remove('done');
       }
       
       clearTimeout(outputTimeout);
@@ -376,7 +383,7 @@ function connectWebSocket() {
         isProcessing = false;
         if (bubbleContainer) {
           bubbleContainer.classList.remove('processing');
-          bubbleContainer.classList.add('waiting');
+          bubbleContainer.classList.add('done');
         }
         updateTitleIndicator();
         
@@ -419,7 +426,7 @@ function toggleTerminal(show) {
       
       if (bubbleContainer) {
         bubbleContainer.classList.remove('processing');
-        bubbleContainer.classList.remove('waiting');
+        bubbleContainer.classList.remove('done');
       }
       
       updateBubble();
@@ -503,7 +510,7 @@ document.addEventListener('visibilitychange', () => {
     
     if (bubbleContainer) {
       bubbleContainer.classList.remove('processing');
-      bubbleContainer.classList.remove('waiting');
+      bubbleContainer.classList.remove('done');
     }
     
     updateBubble();

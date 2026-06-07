@@ -6,9 +6,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.action.setBadgeText({ text: isVisible ? 'REC' : '', tabId: tabId });
       chrome.action.setBadgeBackgroundColor({ color: '#F44336', tabId: tabId });
       if (chrome.action.setBadgeTextColor) chrome.action.setBadgeTextColor({ color: '#FFFFFF', tabId: tabId });
-    } else if (message.status === 'waiting') {
-      chrome.action.setBadgeText({ text: '!', tabId: tabId });
-      chrome.action.setBadgeBackgroundColor({ color: '#FF9800', tabId: tabId });
+    } else if (message.status === 'done') {
+      chrome.action.setBadgeText({ text: '✓', tabId: tabId });
+      chrome.action.setBadgeBackgroundColor({ color: '#4CAF50', tabId: tabId });
       if (chrome.action.setBadgeTextColor) chrome.action.setBadgeTextColor({ color: '#FFFFFF', tabId: tabId });
     } else if (message.status === 'clear') {
       chrome.action.setBadgeText({ text: '', tabId: tabId });
