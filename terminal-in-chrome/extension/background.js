@@ -10,11 +10,11 @@ function updateAnimation() {
   }
   
   const frames = ['...', ' ..', '. .', '.. '];
-  const text = frames[animationFrame % frames.length];
+  const text = frames[Math.floor(animationFrame / 2) % frames.length];
   
-  // Create breathing color effect (alpha from ~100 to 255)
-  const cycle = animationFrame % 8;
-  const alpha = cycle <= 4 ? 155 + (cycle * 25) : 155 + ((8 - cycle) * 25);
+  // sine wave for smooth breathing (0 to 1)
+  const factor = (Math.sin(animationFrame / 10 * Math.PI * 2) + 1) / 2;
+  const alpha = Math.floor(50 + 205 * factor); // 50 to 255
   const color = [3, 169, 244, alpha];
   
   processingTabs.forEach(tabId => {
@@ -31,7 +31,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.status === 'processing') {
       processingTabs.add(tabId);
       if (!animationInterval) {
-        animationInterval = setInterval(updateAnimation, 250);
+        animationInterval = setInterval(updateAnimation, 100);
       }
       if (chrome.action.setBadgeTextColor) chrome.action.setBadgeTextColor({ color: '#FFFFFF', tabId: tabId });
     } else if (message.status === 'waiting') {

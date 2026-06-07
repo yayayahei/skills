@@ -63,6 +63,8 @@ function observeTitle() {
 
 
 let originalFavicons = null;
+let faviconInterval = null;
+let faviconFrame = 0;
 
 function saveFavicons() {
   if (originalFavicons !== null) return;
@@ -97,28 +99,64 @@ function restoreFavicons() {
   originalFavicons = null;
 }
 
+function drawFavicon(status) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d');
+  
+  if (status === 'processing') {
+    const factor = (Math.sin(faviconFrame / 10 * Math.PI * 2) + 1) / 2;
+    const radius = 12 + 4 * factor;
+    const alpha = 0.5 + 0.5 * factor;
+    
+    ctx.fillStyle = `rgba(3, 169, 244, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(16, 16, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(10, 16, 2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(16, 16, 2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(22, 16, 2, 0, Math.PI*2); ctx.fill();
+  } else if (status === 'waiting') {
+    ctx.fillStyle = '#F44336';
+    ctx.beginPath();
+    ctx.arc(16, 16, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(14, 10, 4, 12);
+  }
+  
+  const link = document.createElement('link');
+  link.rel = 'icon';
+  link.href = canvas.toDataURL('image/png');
+  
+  const current = document.querySelectorAll('link[rel~="icon"]');
+  current.forEach(l => l.parentNode.removeChild(l));
+  document.head.appendChild(link);
+}
+
 function setFavicon(status) {
   if (status === 'clear') {
+    if (faviconInterval) { clearInterval(faviconInterval); faviconInterval = null; }
     restoreFavicons();
     return;
   }
   
   saveFavicons();
-  const current = document.querySelectorAll('link[rel~="icon"]');
-  current.forEach(link => link.parentNode.removeChild(link));
   
-  let svg = '';
   if (status === 'processing') {
-    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#03A9F4"><animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/><animate attributeName="r" values="13;16;13" dur="2s" repeatCount="indefinite"/></circle><circle cx="10" cy="16" r="2" fill="#fff"/><circle cx="16" cy="16" r="2" fill="#fff"/><circle cx="22" cy="16" r="2" fill="#fff"/></svg>';
-  } else if (status === 'waiting') {
-    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#F44336"/><rect x="14" y="10" width="4" height="12" fill="#fff"/></svg>';
+    if (!faviconInterval) {
+      faviconInterval = setInterval(() => {
+        faviconFrame++;
+        drawFavicon('processing');
+      }, 100);
+    }
+  } else {
+    if (faviconInterval) { clearInterval(faviconInterval); faviconInterval = null; }
+    drawFavicon(status);
   }
-  
-  const link = document.createElement('link');
-  link.rel = 'icon';
-  link.type = 'image/svg+xml';
-  link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
-  document.head.appendChild(link);
 }
 
 function updateTitleIndicator() {
