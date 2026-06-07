@@ -27,5 +27,8 @@
   "action": {
     "default_title": "Web Terminal Settings",
     "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
 }

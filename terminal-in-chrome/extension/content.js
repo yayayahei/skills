@@ -257,6 +257,7 @@ function connectWebSocket() {
       
       updateBubble();
       updateTitleIndicator();
+      chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'processing' }).catch(() => {});
       
       if (bubbleContainer) {
         bubbleContainer.classList.add('processing');
@@ -269,6 +270,7 @@ function connectWebSocket() {
           bubbleContainer.classList.remove('processing');
         }
         updateTitleIndicator();
+        chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'done' }).catch(() => {});
       }, 1000);
     }
 
@@ -306,6 +308,7 @@ function toggleTerminal(show) {
     clearTimeout(outputTimeout);
     updateBubble();
     updateTitleIndicator();
+    chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'clear' }).catch(() => {});
     
     terminalContainer.classList.add('show');
     if (!terminal) {
