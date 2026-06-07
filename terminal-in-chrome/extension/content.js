@@ -11,6 +11,78 @@ let startHeight;
 let isFullscreen = false;
 let previousHeight = 0;
 
+let hasUnreadOutput = false;
+let isProcessing = false;
+let bubbleContainer = null;
+let isFirstMessage = true;
+let outputTimeout = null;
+let titleObserver = null;
+
+function injectBubbleHTML() {
+  if (document.getElementById('web-terminal-ext-bubble')) return;
+  
+  bubbleContainer = document.createElement('div');
+  bubbleContainer.id = 'web-terminal-ext-bubble';
+  bubbleContainer.innerHTML = '>_';
+  bubbleContainer.title = 'Terminal has new activity';
+  
+  bubbleContainer.addEventListener('click', () => {
+    toggleTerminal(true);
+  });
+  
+  document.body.appendChild(bubbleContainer);
+}
+
+function updateBubble() {
+  if (!bubbleContainer) injectBubbleHTML();
+  
+  if (hasUnreadOutput && !terminalVisible) {
+    bubbleContainer.classList.add('show');
+    bubbleContainer.classList.add('active');
+  } else {
+    bubbleContainer.classList.remove('show');
+    bubbleContainer.classList.remove('active');
+  }
+}
+
+function observeTitle() {
+  if (titleObserver) titleObserver.disconnect();
+  const titleEl = document.querySelector('title');
+  if (titleEl) {
+    titleObserver = new MutationObserver(() => {
+      if (hasUnreadOutput && !terminalVisible) {
+        const prefixRegex = /^\((•|✓)\) /;
+        if (!prefixRegex.test(document.title)) {
+          updateTitleIndicator();
+        }
+      }
+    });
+    titleObserver.observe(titleEl, { childList: true, characterData: true });
+  }
+}
+
+function updateTitleIndicator() {
+  const prefixRegex = /^\((•|✓)\) /;
+  let newTitle = document.title.replace(prefixRegex, '');
+  
+  if (hasUnreadOutput && !terminalVisible) {
+    const prefix = isProcessing ? '(•) ' : '(✓) ';
+    newTitle = prefix + newTitle;
+  }
+  
+  if (document.title !== newTitle) {
+    if (titleObserver) titleObserver.disconnect();
+    document.title = newTitle;
+    observeTitle();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', observeTitle);
+} else {
+  observeTitle();
+}
+
 function injectTerminalHTML() {
   if (document.getElementById('web-terminal-ext-container')) return;
 
@@ -166,6 +238,7 @@ function connectWebSocket() {
   
   ws.onopen = () => {
     console.log('[WebTerminal] Connected to local server');
+    isFirstMessage = true;
     ws.send(JSON.stringify({ type: 'resize', cols: terminal.cols, rows: terminal.rows }));
     
     terminal.onData(data => {
@@ -176,6 +249,29 @@ function connectWebSocket() {
   };
   
   ws.onmessage = (event) => {
+    if (isFirstMessage) {
+      isFirstMessage = false;
+    } else if (!terminalVisible) {
+      hasUnreadOutput = true;
+      isProcessing = true;
+      
+      updateBubble();
+      updateTitleIndicator();
+      
+      if (bubbleContainer) {
+        bubbleContainer.classList.add('processing');
+      }
+      
+      clearTimeout(outputTimeout);
+      outputTimeout = setTimeout(() => {
+        isProcessing = false;
+        if (bubbleContainer) {
+          bubbleContainer.classList.remove('processing');
+        }
+        updateTitleIndicator();
+      }, 1000);
+    }
+
     if (event.data instanceof Blob) {
       const reader = new FileReader();
       reader.onload = () => terminal.write(reader.result);
@@ -205,6 +301,12 @@ function toggleTerminal(show) {
   chrome.storage.local.set({ [`terminalVisible_${pageUrlKey}`]: terminalVisible });
   
   if (terminalVisible) {
+    hasUnreadOutput = false;
+    isProcessing = false;
+    clearTimeout(outputTimeout);
+    updateBubble();
+    updateTitleIndicator();
+    
     terminalContainer.classList.add('show');
     if (!terminal) {
       initTerminal();
