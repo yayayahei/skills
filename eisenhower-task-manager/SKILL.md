@@ -1,9 +1,12 @@
 ---
 name: task-manager
 description: Task management based on Eisenhower Matrix + P0-P2 priority with Customer Project Management. Four quadrants for execution, separate Customer Project List for all customer work.
+repository: https://github.com/yayayahei/skills/tree/main/eisenhower-task-manager
 ---
 
 # Task Manager - Four-Level System
+
+**Repository:** [yayayahei/skills/eisenhower-task-manager](https://github.com/yayayahei/skills/tree/main/eisenhower-task-manager)
 
 ## Architecture
 
