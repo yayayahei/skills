@@ -61,11 +61,73 @@ function observeTitle() {
   }
 }
 
+
+let originalFavicons = null;
+
+function saveFavicons() {
+  if (originalFavicons !== null) return;
+  originalFavicons = [];
+  const links = document.querySelectorAll('link[rel~="icon"]');
+  links.forEach(link => {
+    originalFavicons.push({
+      rel: link.rel,
+      href: link.href,
+      sizes: link.sizes ? link.sizes.value : '',
+      type: link.type
+    });
+  });
+  if (originalFavicons.length === 0) {
+    originalFavicons.push({ rel: 'icon', href: '/favicon.ico' });
+  }
+}
+
+function restoreFavicons() {
+  if (originalFavicons === null) return;
+  const current = document.querySelectorAll('link[rel~="icon"]');
+  current.forEach(link => link.parentNode.removeChild(link));
+  
+  originalFavicons.forEach(icon => {
+    const link = document.createElement('link');
+    link.rel = icon.rel;
+    link.href = icon.href;
+    if (icon.sizes) link.sizes = icon.sizes;
+    if (icon.type) link.type = icon.type;
+    document.head.appendChild(link);
+  });
+  originalFavicons = null;
+}
+
+function setFavicon(status) {
+  if (status === 'clear') {
+    restoreFavicons();
+    return;
+  }
+  
+  saveFavicons();
+  const current = document.querySelectorAll('link[rel~="icon"]');
+  current.forEach(link => link.parentNode.removeChild(link));
+  
+  let svg = '';
+  if (status === 'processing') {
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#FF9800"/><circle cx="10" cy="16" r="2" fill="#fff"/><circle cx="16" cy="16" r="2" fill="#fff"/><circle cx="22" cy="16" r="2" fill="#fff"/></svg>';
+  } else if (status === 'done') {
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#4CAF50"/><path d="M9 16l5 5 9-10" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  
+  const link = document.createElement('link');
+  link.rel = 'icon';
+  link.type = 'image/svg+xml';
+  link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+  document.head.appendChild(link);
+}
+
 function updateTitleIndicator() {
   const prefixRegex = /^\((•|✓)\) /;
   let newTitle = document.title.replace(prefixRegex, '');
   
+  let status = 'clear';
   if (hasUnreadOutput && !terminalVisible) {
+    status = isProcessing ? 'processing' : 'done';
     const prefix = isProcessing ? '(•) ' : '(✓) ';
     newTitle = prefix + newTitle;
   }
@@ -75,6 +137,8 @@ function updateTitleIndicator() {
     document.title = newTitle;
     observeTitle();
   }
+  
+  setFavicon(status);
 }
 
 if (document.readyState === 'loading') {
