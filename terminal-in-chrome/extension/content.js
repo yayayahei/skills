@@ -109,7 +109,7 @@ function setFavicon(status) {
   
   let svg = '';
   if (status === 'processing') {
-    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#03A9F4"/><circle cx="10" cy="16" r="2" fill="#fff"/><circle cx="16" cy="16" r="2" fill="#fff"/><circle cx="22" cy="16" r="2" fill="#fff"/></svg>';
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#03A9F4"><animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/><animate attributeName="r" values="13;16;13" dur="2s" repeatCount="indefinite"/></circle><circle cx="10" cy="16" r="2" fill="#fff"/><circle cx="16" cy="16" r="2" fill="#fff"/><circle cx="22" cy="16" r="2" fill="#fff"/></svg>';
   } else if (status === 'waiting') {
     svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#F44336"/><rect x="14" y="10" width="4" height="12" fill="#fff"/></svg>';
   }
