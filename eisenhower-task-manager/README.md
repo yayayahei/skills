@@ -6,18 +6,20 @@ A comprehensive task management system built around the Eisenhower Matrix method
 
 The crown jewel of this skill is its interactive, real-time web dashboard. It provides a visual, drag-and-drop interface for all your tasks, automatically staying in sync with your local markdown files.
 
-### 💻 Integrated Terminal
+### 💻 Integrated Terminal & AI Sync
 - **Built-in Shell**: A fully functional, resizable web terminal integrated directly into the dashboard.
 - **Smart Detection**: Automatically detects and uses your default login shell (e.g., `zsh` or `bash`).
 - **Persistent Sessions**: The terminal process runs in the background. If you refresh the page, your terminal history and running processes remain exactly as you left them.
 - **VS Code Shortcuts**: Use `Ctrl + \`` or `Cmd + J` to quickly toggle the terminal panel from anywhere in the dashboard.
 - **Customizable Layout**: Drag the resizer to adjust height, or double-click the terminal header to instantly maximize it to full screen.
+- **AI Agent Integration**: Start your code agent (like Trae or Claude Code) inside the terminal and chat in natural language to add tasks, manage projects, and sync with external systems using special rules—all without leaving the dashboard.
 
 ### 📋 Task Management Operations
 The dashboard isn't just for viewing; it's a fully interactive task manager:
 
 - **Quick Actions**: Hover over any task to reveal action buttons.
-- **Move Tasks**: Easily move tasks between quadrants (e.g., promote a Q2 task to Q1).
+- **Drag and Drop**: Drag tasks to quickly reorder them or move them between quadrants.
+- **Move Tasks**: Click the move icon (→) to open a contextual menu to move a task to another list (e.g., from a Quadrant to the Maybe or Delegation list).
 - **Complete Tasks**: Mark tasks as complete with a single click. They are automatically moved to your `archived.md` file.
 - **Copy Tasks**: Click the copy icon (⎘) to copy a task to another list (e.g., from a Quadrant to a Customer Project, or to the Delegation list) without removing the original.
 - **Delete Tasks**: Remove obsolete tasks cleanly.
