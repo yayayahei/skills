@@ -105,27 +105,24 @@ function drawFavicon(status) {
   canvas.height = 32;
   const ctx = canvas.getContext('2d');
   
+  let isVisible = true;
+  
   if (status === 'processing') {
-    const factor = (Math.sin(faviconFrame / 10 * Math.PI * 2) + 1) / 2;
-    const radius = 12 + 4 * factor;
-    const alpha = 0.5 + 0.5 * factor;
-    
-    ctx.fillStyle = `rgba(3, 169, 244, ${alpha})`;
-    ctx.beginPath();
-    ctx.arc(16, 16, radius, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(10, 16, 2, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(16, 16, 2, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(22, 16, 2, 0, Math.PI*2); ctx.fill();
+    isVisible = (faviconFrame % 2) === 0;
+    if (isVisible) {
+      ctx.fillStyle = '#F44336'; // Red dot for recording
+      ctx.beginPath();
+      ctx.arc(16, 16, 12, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else if (status === 'waiting') {
-    ctx.fillStyle = '#F44336';
+    ctx.fillStyle = '#FF9800'; // Orange for waiting
     ctx.beginPath();
-    ctx.arc(16, 16, 16, 0, Math.PI * 2);
+    ctx.arc(16, 16, 14, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#fff';
-    ctx.fillRect(14, 10, 4, 12);
+    ctx.fillRect(11, 10, 4, 12);
+    ctx.fillRect(17, 10, 4, 12);
   }
   
   const link = document.createElement('link');
@@ -135,12 +132,15 @@ function drawFavicon(status) {
   const current = document.querySelectorAll('link[rel~="icon"]');
   current.forEach(l => l.parentNode.removeChild(l));
   document.head.appendChild(link);
+  
+  return isVisible;
 }
 
 function setFavicon(status) {
   if (status === 'clear') {
     if (faviconInterval) { clearInterval(faviconInterval); faviconInterval = null; }
     restoreFavicons();
+    chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'clear' }).catch(() => {});
     return;
   }
   
@@ -148,14 +148,19 @@ function setFavicon(status) {
   
   if (status === 'processing') {
     if (!faviconInterval) {
+      const blink = drawFavicon('processing');
+      chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'processing', blink }).catch(() => {});
+      
       faviconInterval = setInterval(() => {
         faviconFrame++;
-        drawFavicon('processing');
-      }, 100);
+        const blink = drawFavicon('processing');
+        chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'processing', blink }).catch(() => {});
+      }, 500);
     }
   } else {
     if (faviconInterval) { clearInterval(faviconInterval); faviconInterval = null; }
     drawFavicon(status);
+    chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'waiting' }).catch(() => {});
   }
 }
 
@@ -359,7 +364,7 @@ function connectWebSocket() {
       
       updateBubble();
       updateTitleIndicator();
-      chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'processing' }).catch(() => {});
+      
       
       if (bubbleContainer) {
         bubbleContainer.classList.add('processing');
@@ -374,7 +379,7 @@ function connectWebSocket() {
           bubbleContainer.classList.add('waiting');
         }
         updateTitleIndicator();
-        chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'waiting' }).catch(() => {});
+        
       }, 1000);
     }
 
@@ -419,7 +424,7 @@ function toggleTerminal(show) {
       
       updateBubble();
       updateTitleIndicator();
-      chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'clear' }).catch(() => {});
+      
     }
     
     terminalContainer.classList.add('show');
@@ -503,6 +508,6 @@ document.addEventListener('visibilitychange', () => {
     
     updateBubble();
     updateTitleIndicator();
-    chrome.runtime.sendMessage({ type: 'TERMINAL_ACTIVITY', status: 'clear' }).catch(() => {});
+    
   }
 });
