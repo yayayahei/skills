@@ -19,7 +19,7 @@ The dashboard isn't just for viewing; it's a fully interactive task manager:
 - **Quick Actions**: Hover over any task to reveal action buttons.
 - **Move Tasks**: Easily move tasks between quadrants (e.g., promote a Q2 task to Q1).
 - **Complete Tasks**: Mark tasks as complete with a single click. They are automatically moved to your `archived.md` file.
-- **Copy to Clipboard**: Click the copy icon to instantly copy a task's full text to your clipboard.
+- **Copy Tasks**: Click the copy icon (⎘) to copy a task to another list (e.g., from a Quadrant to a Customer Project, or to the Delegation list) without removing the original.
 - **Delete Tasks**: Remove obsolete tasks cleanly.
 - **Real-time Sync**: Every action taken in the dashboard instantly updates the underlying markdown files, and any changes made directly to the markdown files (e.g., via CLI or IDE) instantly reflect in the dashboard via WebSockets.
 
