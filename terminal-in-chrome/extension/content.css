@@ -145,3 +145,64 @@
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
 }
+
+
+/* Light Theme Overrides */
+#web-terminal-ext-container.theme-light {
+  background-color: #ffffff;
+  color: #333333;
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.15);
+}
+
+#web-terminal-ext-container.theme-light #web-terminal-ext-header {
+  background-color: #f3f3f3;
+  border-bottom: 1px solid #ddd;
+}
+
+#web-terminal-ext-container.theme-light #web-terminal-ext-title {
+  color: #333333;
+}
+
+#web-terminal-ext-container.theme-light #web-terminal-ext-close {
+  color: #666666;
+}
+
+#web-terminal-ext-container.theme-light #web-terminal-ext-close:hover {
+  color: #000000;
+}
+
+#web-terminal-ext-container.theme-light #web-terminal-ext-resizer {
+  background-color: #e0e0e0;
+}
+
+#web-terminal-ext-container.theme-light #web-terminal-ext-resizer:hover, 
+#web-terminal-ext-container.theme-light #web-terminal-ext-resizer.active {
+  background-color: #007acc;
+}
+
+#web-terminal-ext-container.theme-light #web-terminal-ext-resizer::after {
+  background-color: #aaa;
+}
+
+#web-terminal-ext-container.theme-light #web-terminal-ext-resizer:hover::after, 
+#web-terminal-ext-container.theme-light #web-terminal-ext-resizer.active::after {
+  background-color: #fff;
+}
+
+#web-terminal-ext-container.theme-light #web-terminal-ext-host {
+  background-color: #ffffff;
+}
+
+#web-terminal-ext-bubble.theme-light {
+  background-color: #f3f3f3;
+  color: #333;
+  border-color: #ddd;
+}
+
+#web-terminal-ext-bubble.theme-light:hover {
+  background-color: #e0e0e0;
+}
+
+#web-terminal-ext-bubble.theme-light.active::after {
+  border-color: #f3f3f3;
+}

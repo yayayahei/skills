@@ -46,6 +46,14 @@
       color: #2da44e;
       display: none;
     }
+    select {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
   </style>
 </head>
 <body>
@@ -54,6 +62,14 @@
     <input type="number" id="portInput" placeholder="8989" min="1" max="65535">
   </div>
   
+  <div class="form-group">
+    <label for="themeSelect">Terminal Theme:</label>
+    <select id="themeSelect">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+    </select>
+  </div>
+
   <div class="form-group">
     <label for="blockedSitesInput">Blocked Sites (one per line, e.g. google.com):</label>
     <textarea id="blockedSitesInput" rows="4" placeholder="google.com&#10;github.com"></textarea>

@@ -1,11 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
   const portInput = document.getElementById('portInput');
   const blockedSitesInput = document.getElementById('blockedSitesInput');
+  const themeSelect = document.getElementById('themeSelect');
   const saveBtn = document.getElementById('saveBtn');
   const statusEl = document.getElementById('status');
 
   // Load current settings
-  chrome.storage.local.get(['terminalPort', 'blockedSites'], (result) => {
+  chrome.storage.local.get(['terminalPort', 'blockedSites', 'terminalTheme'], (result) => {
     if (result.terminalPort) {
       portInput.value = result.terminalPort;
     } else {
@@ -15,11 +16,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (result.blockedSites && Array.isArray(result.blockedSites)) {
       blockedSitesInput.value = result.blockedSites.join('\n');
     }
+    
+    if (result.terminalTheme) {
+      themeSelect.value = result.terminalTheme;
+    }
   });
 
   // Save settings
   saveBtn.addEventListener('click', () => {
     const port = portInput.value || '8989';
+    const theme = themeSelect.value || 'dark';
     const blockedSitesText = blockedSitesInput.value.trim();
     
     const blockedSites = blockedSitesText 
@@ -28,7 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     chrome.storage.local.set({ 
       terminalPort: port,
-      blockedSites: blockedSites
+      blockedSites: blockedSites,
+      terminalTheme: theme
     }, () => {
       // Show status
       statusEl.style.display = 'block';
@@ -40,8 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.tabs.query({}, (tabs) => {
         tabs.forEach(tab => {
           chrome.tabs.sendMessage(tab.id, { 
-            type: 'UPDATE_PORT', 
-            port: port 
+            type: 'UPDATE_SETTINGS', 
+            port: port,
+            theme: theme 
           }).catch(() => {
             // Ignore errors for tabs where content script isn't injected
           });

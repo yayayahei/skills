@@ -11,6 +11,31 @@ let startHeight;
 let isFullscreen = false;
 let previousHeight = 0;
 
+let currentTheme = 'dark';
+const terminalThemes = {
+  dark: { background: '#000000', foreground: '#e6edf3', cursor: '#ffffff' },
+  light: { background: '#ffffff', foreground: '#333333', cursor: '#000000', selectionBackground: 'rgba(0, 0, 0, 0.3)' }
+};
+
+function applyTheme(themeName) {
+  currentTheme = themeName;
+  const isLight = themeName === 'light';
+  
+  if (terminalContainer) {
+    if (isLight) terminalContainer.classList.add('theme-light');
+    else terminalContainer.classList.remove('theme-light');
+  }
+  
+  if (bubbleContainer) {
+    if (isLight) bubbleContainer.classList.add('theme-light');
+    else bubbleContainer.classList.remove('theme-light');
+  }
+  
+  if (terminal) {
+    terminal.options.theme = terminalThemes[themeName] || terminalThemes.dark;
+  }
+}
+
 let hasUnreadOutput = false;
 let isProcessing = false;
 let bubbleContainer = null;
@@ -31,6 +56,7 @@ function injectBubbleHTML() {
   });
   
   document.body.appendChild(bubbleContainer);
+  applyTheme(currentTheme);
 }
 
 function updateBubble() {
@@ -187,6 +213,7 @@ function injectTerminalHTML() {
   
   document.body.appendChild(container);
   terminalContainer = container;
+  applyTheme(currentTheme);
 
   // Setup Resizer
   resizer.addEventListener('mousedown', (e) => {
@@ -277,7 +304,7 @@ function initTerminal() {
     cursorBlink: true,
     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
     fontSize: 14,
-    theme: { background: '#000000', foreground: '#e6edf3' }
+    theme: terminalThemes[currentTheme] || terminalThemes.dark
   });
   
   // Use the FitAddon constructor we exposed globally via the script injection
@@ -411,7 +438,7 @@ function toggleTerminal(show) {
 let isSiteBlocked = false;
 
 // Check if current site is blocked
-chrome.storage.local.get([`terminalVisible_${pageUrlKey}`, 'terminalPort', 'blockedSites'], (result) => {
+chrome.storage.local.get([`terminalVisible_${pageUrlKey}`, 'terminalPort', 'blockedSites', 'terminalTheme'], (result) => {
   if (result.blockedSites && Array.isArray(result.blockedSites)) {
     const origin = window.location.origin;
     const hostname = window.location.hostname;
@@ -430,6 +457,9 @@ chrome.storage.local.get([`terminalVisible_${pageUrlKey}`, 'terminalPort', 'bloc
   
   if (isSiteBlocked) return;
   
+  if (result.terminalTheme) {
+    applyTheme(result.terminalTheme);
+  }
   if (result.terminalPort) {
     wsUrl = `ws://localhost:${result.terminalPort}/terminal`;
   }
@@ -450,10 +480,16 @@ document.addEventListener('keydown', (e) => {
 
 // Listen for messages from background script or popup to update port
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'UPDATE_PORT' && message.port) {
-    wsUrl = `ws://localhost:${message.port}/terminal`;
-    if (ws) {
-      ws.close(); // Will auto-reconnect via onclose handler
+  if ((message.type === 'UPDATE_PORT' || message.type === 'UPDATE_SETTINGS') && message.port) {
+    if (message.theme) {
+      applyTheme(message.theme);
+    }
+    const newWsUrl = `ws://localhost:${message.port}/terminal`;
+    if (wsUrl !== newWsUrl) {
+      wsUrl = newWsUrl;
+      if (ws) {
+        ws.close(); // Will auto-reconnect via onclose handler
+      }
     }
   }
 });
