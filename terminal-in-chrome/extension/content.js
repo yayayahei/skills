@@ -13,8 +13,34 @@ let previousHeight = 0;
 
 let currentTheme = 'dark';
 const terminalThemes = {
-  dark: { background: '#000000', foreground: '#e6edf3', cursor: '#ffffff' },
-  light: { background: '#ffffff', foreground: '#333333', cursor: '#000000', selectionBackground: 'rgba(0, 0, 0, 0.3)' }
+  dark: { 
+    background: '#000000', 
+    foreground: '#e6edf3', 
+    cursor: '#ffffff' 
+  },
+  light: { 
+    background: '#ffffff', 
+    foreground: '#333333', 
+    cursor: '#000000', 
+    selectionBackground: 'rgba(0, 0, 0, 0.3)',
+    // Map ANSI colors to be darker/more readable on white background
+    black: '#000000',
+    red: '#cd3131',
+    green: '#008000',
+    yellow: '#949800',
+    blue: '#0451a5',
+    magenta: '#bc05bc',
+    cyan: '#0598bc',
+    white: '#555555',
+    brightBlack: '#666666',
+    brightRed: '#cd3131',
+    brightGreen: '#14ce14',
+    brightYellow: '#b5ba00',
+    brightBlue: '#0451a5',
+    brightMagenta: '#bc05bc',
+    brightCyan: '#0598bc',
+    brightWhite: '#a5a5a5'
+  }
 };
 
 function applyTheme(themeName) {
@@ -331,7 +357,7 @@ function initTerminal() {
 function connectWebSocket() {
   // Use origin + pathname as the unique identifier for the terminal instance
   const pageUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-  const connectUrl = `${wsUrl}?url=${pageUrl}`;
+  const connectUrl = `${wsUrl}?url=${pageUrl}&theme=${currentTheme}`;
   ws = new WebSocket(connectUrl);
   
   ws.onopen = () => {

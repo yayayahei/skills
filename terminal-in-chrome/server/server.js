@@ -28,6 +28,7 @@ const terminalInstances = new Map();
 app.ws('/terminal', (ws, req) => {
   const query = url.parse(req.url, true).query;
   const pageUrl = query.url || 'default';
+  const theme = query.theme || 'dark';
   
   console.log(`[WebSocket] Terminal client connected for URL: ${pageUrl}`);
   
@@ -40,7 +41,7 @@ app.ws('/terminal', (ws, req) => {
       cols: 80,
       rows: 24,
       cwd: process.env.HOME,
-      env: process.env
+      env: { ...process.env, COLORFGBG: theme === 'light' ? '15;0' : 'default' }
     });
 
     instance = {
