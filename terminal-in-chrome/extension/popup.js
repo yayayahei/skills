@@ -1,12 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
   const portInput = document.getElementById('portInput');
   const blockedSitesInput = document.getElementById('blockedSitesInput');
+  const sharedPathsInput = document.getElementById('sharedPathsInput');
   const themeSelect = document.getElementById('themeSelect');
   const saveBtn = document.getElementById('saveBtn');
   const statusEl = document.getElementById('status');
 
   // Load current settings
-  chrome.storage.local.get(['terminalPort', 'blockedSites', 'terminalTheme'], (result) => {
+  chrome.storage.local.get(['terminalPort', 'blockedSites', 'terminalTheme', 'sharedPaths'], (result) => {
     if (result.terminalPort) {
       portInput.value = result.terminalPort;
     } else {
@@ -20,6 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (result.terminalTheme) {
       themeSelect.value = result.terminalTheme;
     }
+    
+    if (result.sharedPaths && Array.isArray(result.sharedPaths)) {
+      sharedPathsInput.value = result.sharedPaths.join('\n');
+    }
   });
 
   // Save settings
@@ -27,15 +32,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const port = portInput.value || '8989';
     const theme = themeSelect.value || 'dark';
     const blockedSitesText = blockedSitesInput.value.trim();
+    const sharedPathsText = sharedPathsInput.value.trim();
     
     const blockedSites = blockedSitesText 
       ? blockedSitesText.split('\n').map(s => s.trim()).filter(s => s)
       : [];
     
+    const sharedPaths = sharedPathsText
+      ? sharedPathsText.split('\n').map(s => s.trim()).filter(s => s)
+      : [];
+    
     chrome.storage.local.set({ 
       terminalPort: port,
       blockedSites: blockedSites,
-      terminalTheme: theme
+      terminalTheme: theme,
+      sharedPaths: sharedPaths
     }, () => {
       // Show status
       statusEl.style.display = 'block';

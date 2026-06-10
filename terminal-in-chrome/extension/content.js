@@ -356,7 +356,7 @@ function initTerminal() {
 
 function connectWebSocket() {
   // Use origin + pathname as the unique identifier for the terminal instance
-  const pageUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+  const pageUrl = encodeURIComponent(pageUrlKey);
   const connectUrl = `${wsUrl}?url=${pageUrl}&theme=${currentTheme}`;
   ws = new WebSocket(connectUrl);
   
@@ -418,7 +418,7 @@ function connectWebSocket() {
   };
 }
 
-const pageUrlKey = window.location.origin + window.location.pathname;
+let pageUrlKey = window.location.origin + window.location.pathname;
 
 function toggleTerminal(show) {
   if (!terminalContainer) injectTerminalHTML();
@@ -464,7 +464,22 @@ function toggleTerminal(show) {
 let isSiteBlocked = false;
 
 // Check if current site is blocked
-chrome.storage.local.get([`terminalVisible_${pageUrlKey}`, 'terminalPort', 'blockedSites', 'terminalTheme'], (result) => {
+chrome.storage.local.get(null, (result) => {
+  if (result.sharedPaths && Array.isArray(result.sharedPaths)) {
+    const currentHref = window.location.href;
+    const currentHostPath = window.location.host + window.location.pathname;
+    let bestMatch = '';
+    for (const p of result.sharedPaths) {
+      if (currentHref.startsWith(p) || currentHostPath.startsWith(p)) {
+        if (p.length > bestMatch.length) {
+          bestMatch = p;
+        }
+      }
+    }
+    if (bestMatch) {
+      pageUrlKey = 'shared_' + bestMatch;
+    }
+  }
   if (result.blockedSites && Array.isArray(result.blockedSites)) {
     const origin = window.location.origin;
     const hostname = window.location.hostname;
