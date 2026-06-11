@@ -81,14 +81,17 @@ app.ws('/terminal', (ws, req) => {
 
   ws.on('message', (msg) => {
     try {
+      // JSON.parse successfully parses numbers (like "1"), so we must check if it's an object
       const data = JSON.parse(msg);
-      if (data.type === 'resize') {
+      if (data && typeof data === 'object' && data.type === 'resize') {
         instance.ptyProcess.resize(data.cols, data.rows);
+        return;
       }
     } catch (e) {
-      // If it's not JSON, it's terminal input
-      instance.ptyProcess.write(msg);
+      // Ignore parse errors (regular terminal input)
     }
+    // If we didn't return, it's terminal input
+    instance.ptyProcess.write(msg);
   });
 
   ws.on('close', () => {
