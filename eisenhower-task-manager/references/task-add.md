@@ -4,6 +4,9 @@ When user requests to add or insert a task, follow these steps:
 
 ## Steps
 
+### 0. Read Latest State (CRITICAL)
+- **ALWAYS** use the `Read` tool to read the target task file (e.g., `tasks.md`, `delegation.md`) **FIRST** to get the absolute latest state before making any modifications. Never rely on historical context memory.
+
 ### 1. Determine Level and Quadrant
 - Judge task type: Personal execution → Four Quadrants; Delegated → Delegation List; Uncertain → Maybe List
 - If four quadrants task, judge importance (valuable for business/team/personal growth) and urgency (has deadline/blocking others/expired)

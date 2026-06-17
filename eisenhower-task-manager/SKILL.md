@@ -109,6 +109,7 @@ Completed → Archive entry + complete quadrant task if exists
 See [references/task-add.md](references/task-add.md) for complete workflow.
 
 **Quick Guide:**
+0. **CRITICAL: ALWAYS use the Read tool to read the target file FIRST to get the latest state before modifying it.**
 1. Determine level: Quadrants / Delegation / Maybe
 2. Determine quadrant (if applicable): Q1/Q2/Q3/Q4
 3. Assign priority: P0/P1/P2

@@ -19,6 +19,9 @@ Applicable to tasks in `tasks/tasks.md` (Four Quadrant Tasks).
 
 ### Steps
 
+#### 0. Read Latest State (CRITICAL)
+- **ALWAYS** use the `Read` tool to read `tasks/tasks.md` **FIRST** to get the absolute latest state before making any modifications. Never rely on historical context memory.
+
 #### 1. Mark Complete
 - Find corresponding task in task list file
 - Change `[ ]` to `[x]` or add ✅ mark
