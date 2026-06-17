@@ -346,5 +346,5 @@ By default, the skill operates in the `tasks/` directory relative to this SKILL.
 
 ---
 
-*Version: 8.2 (Added daemon mode, stop.sh, enhanced error handling)*
-*Last Updated: 2026-04-21*
+*Version: 8.3 (Fixed dirty read issue by enforcing read before modify)*
+*Last Updated: 2026-06-17*
