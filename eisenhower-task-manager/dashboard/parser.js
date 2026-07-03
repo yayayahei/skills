@@ -24,10 +24,10 @@ function parseTasks(content) {
   // Stats will be calculated based on actual parsed tasks (more accurate than header text)
 
   // Split by quadrants - support both half-width () and full-width () parentheses and varying emoji presence
-  const q1Match = content.match(/## (?:🔥 )?Q1[\s\S]*?(?=## (?:💼 )?Q2|$)/);
-  const q2Match = content.match(/## (?:💼 )?Q2[\s\S]*?(?=## (?:⚡ )?Q3|$)/);
-  const q3Match = content.match(/## (?:⚡ )?Q3[\s\S]*?(?=## (?:🧘 )?Q4|$)/);
-  const q4Match = content.match(/## (?:🧘 )?Q4[\s\S]*?(?=## (?:👑 )?|## Completed|$)/);
+  const q1Match = content.match(/## (?:🔥 )?Q1[\s\S]*?(?=\n## (?!#)|$)/);
+  const q2Match = content.match(/## (?:💼 )?Q2[\s\S]*?(?=\n## (?!#)|$)/);
+  const q3Match = content.match(/## (?:⚡ )?Q3[\s\S]*?(?=\n## (?!#)|$)/);
+  const q4Match = content.match(/## (?:🧘 )?Q4[\s\S]*?(?=\n## (?!#)|$)/);
 
   if (q1Match) result.q1 = parseQuadrantTasks(q1Match[0], 'Q1');
   if (q2Match) result.q2 = parseQuadrantTasks(q2Match[0], 'Q2');
