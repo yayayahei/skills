@@ -1,6 +1,6 @@
 {
   "name": "terminal-in-chrome",
-  "version": "1.1.11",
+  "version": "1.2.0",
   "description": "Manages the Web Terminal Chrome Extension local backend server.",
   "repository": {
     "type": "git",
