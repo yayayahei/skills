@@ -21,6 +21,95 @@ function formatUptime(ms) {
   return parts.join(' ');
 }
 
+// --- Path Configuration Management ---
+
+function createPathConfigElement(config = { path: '', cwd: '', cmd: '' }) {
+  const div = document.createElement('div');
+  div.className = 'path-config-item';
+  div.innerHTML = `
+    <div>
+      <label class="field-label">URL Path / Prefix</label>
+      <input type="text" class="path-input" placeholder="e.g. github.com/user" value="${config.path || ''}">
+    </div>
+    <div>
+      <label class="field-label">Initial CWD (Optional)</label>
+      <input type="text" class="cwd-input" placeholder="e.g. /Users/name/project" value="${config.cwd || ''}">
+    </div>
+    <div>
+      <label class="field-label">Initial Command (Optional)</label>
+      <input type="text" class="cmd-input" placeholder="e.g. npm start" value="${config.cmd || ''}">
+    </div>
+    <button class="remove-btn" title="Remove configuration">Remove</button>
+  `;
+
+  div.querySelector('.remove-btn').addEventListener('click', () => {
+    div.remove();
+  });
+
+  return div;
+}
+
+async function loadPathConfigs() {
+  const container = document.getElementById('pathConfigs');
+  container.innerHTML = '';
+
+  try {
+    const result = await chrome.storage.local.get('sharedPaths');
+    let configs = result.sharedPaths || [];
+
+    // Convert legacy format if needed
+    if (configs.length > 0 && typeof configs[0] === 'string') {
+      configs = configs.map(p => ({ path: p }));
+    }
+
+    if (configs.length === 0) {
+      // Add one empty row by default
+      container.appendChild(createPathConfigElement());
+    } else {
+      configs.forEach(config => {
+        container.appendChild(createPathConfigElement(config));
+      });
+    }
+  } catch (err) {
+    console.error('Error loading path configs:', err);
+  }
+}
+
+async function savePathConfigs() {
+  const container = document.getElementById('pathConfigs');
+  const items = container.querySelectorAll('.path-config-item');
+  const newConfigs = [];
+
+  items.forEach(item => {
+    const path = item.querySelector('.path-input').value.trim();
+    const cwd = item.querySelector('.cwd-input').value.trim();
+    const cmd = item.querySelector('.cmd-input').value.trim();
+
+    if (path) {
+      const config = { path };
+      if (cwd) config.cwd = cwd;
+      if (cmd) config.cmd = cmd;
+      newConfigs.push(config);
+    }
+  });
+
+  try {
+    await chrome.storage.local.set({ sharedPaths: newConfigs });
+
+    // Show success message
+    const status = document.getElementById('saveStatus');
+    status.style.display = 'inline-flex';
+    setTimeout(() => {
+      status.style.display = 'none';
+    }, 2000);
+  } catch (err) {
+    console.error('Error saving path configs:', err);
+    alert('Failed to save configurations.');
+  }
+}
+
+// --- Terminal Instance Management ---
+
 async function loadTerminals() {
   const listEl = document.getElementById('terminalsList');
   const errorEl = document.getElementById('errorMsg');
@@ -121,12 +210,22 @@ async function killTerminal(url, port) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Init Path Configs
+  loadPathConfigs();
+
+  document.getElementById('addPathBtn').addEventListener('click', () => {
+    document.getElementById('pathConfigs').appendChild(createPathConfigElement());
+  });
+
+  document.getElementById('saveConfigBtn').addEventListener('click', savePathConfigs);
+
+  // Init Terminal List
   loadTerminals();
-  
+
   document.getElementById('refreshBtn').addEventListener('click', () => {
     loadTerminals();
   });
-  
+
   // Auto refresh every 5 seconds
   setInterval(loadTerminals, 5000);
 });

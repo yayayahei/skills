@@ -31,18 +31,20 @@ app.ws('/terminal', (ws, req) => {
   const query = url.parse(req.url, true).query;
   const pageUrl = query.url || 'default';
   const theme = query.theme || 'dark';
-  
+  const cwd = query.cwd || process.env.HOME;
+  const initCmd = query.cmd || '';
+
   console.log(`[WebSocket] Terminal client connected for URL: ${pageUrl}`);
-  
+
   let instance = terminalInstances.get(pageUrl);
-  
+
   if (!instance) {
     // Create new terminal instance for this URL
     const ptyProcess = pty.spawn(shell, [], {
       name: 'xterm-color',
       cols: 80,
       rows: 24,
-      cwd: process.env.HOME,
+      cwd: cwd,
       env: { ...process.env, COLORFGBG: theme === 'light' ? '15;0' : 'default' }
     });
 
@@ -51,8 +53,15 @@ app.ws('/terminal', (ws, req) => {
       history: '',
       clients: new Set()
     };
-    
+
     terminalInstances.set(pageUrl, instance);
+
+    if (initCmd) {
+      // Small delay to ensure shell is ready before writing command
+      setTimeout(() => {
+        ptyProcess.write(`${initCmd}\r`);
+      }, 500);
+    }
 
     ptyProcess.onData((data) => {
       instance.history += data;

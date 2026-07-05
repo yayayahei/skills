@@ -98,16 +98,153 @@
       margin-bottom: 16px;
       display: none;
     }
+
+    /* Config section styles */
+    .config-section {
+      background: white;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(27,31,36,0.04);
+    }
+    .config-section h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 18px;
+      color: #24292f;
+      border-bottom: 1px solid #eaeef2;
+      padding-bottom: 8px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #24292f;
+    }
+    .form-group .help-text {
+      font-size: 12px;
+      color: #57606a;
+      margin-bottom: 8px;
+    }
+    .path-configs {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .path-config-item {
+      display: grid;
+      grid-template-columns: 2fr 2fr 2fr auto;
+      gap: 12px;
+      align-items: end;
+      padding: 12px;
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+    }
+    .path-config-item input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #d0d7de;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    .path-config-item input:focus {
+      outline: none;
+      border-color: #0969da;
+      box-shadow: 0 0 0 3px rgba(9,105,218,0.3);
+    }
+    .path-config-item .field-label {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #57606a;
+      display: block;
+    }
+    .remove-btn {
+      background: #cf222e;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+      height: 30px;
+    }
+    .remove-btn:hover {
+      background: #a40e26;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .add-btn {
+      background: #f6f8fa;
+      color: #24292f;
+      border: 1px solid #d0d7de;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .add-btn:hover {
+      background: #f3f4f6;
+    }
+    .save-btn {
+      background: #2da44e;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 16px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .save-btn:hover {
+      background: #2c974b;
+    }
+    .save-status {
+      margin-left: 12px;
+      color: #2da44e;
+      font-size: 14px;
+      display: none;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
   <h1>
     Terminal Management
-    <button id="refreshBtn" class="refresh-btn">Refresh</button>
+    <button id="refreshBtn" class="refresh-btn">Refresh Instances</button>
   </h1>
-  
+
   <div id="errorMsg" class="error-msg"></div>
-  
+
+  <div class="config-section">
+    <h2>Shared Terminal Paths Configuration</h2>
+    <div class="form-group">
+      <div class="help-text">
+        Configure paths that should share the same terminal instance. You can also specify an initial working directory (cwd) and a startup command (cmd) for each path.
+      </div>
+      <div id="pathConfigs" class="path-configs">
+        <!-- Path configs injected here -->
+      </div>
+      <div class="action-buttons">
+        <button id="addPathBtn" class="add-btn">+ Add Path Config</button>
+        <button id="saveConfigBtn" class="save-btn">Save Configurations</button>
+        <span id="saveStatus" class="save-status">✓ Saved successfully!</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="config-section" style="padding-bottom: 0; border: none; background: transparent; box-shadow: none;">
+    <h2>Active Terminal Instances</h2>
+  </div>
+
   <div id="terminalsList">
     <!-- Terminals will be injected here -->
     <div class="empty-state">Loading...</div>

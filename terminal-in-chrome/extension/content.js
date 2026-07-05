@@ -354,10 +354,19 @@ function initTerminal() {
   });
 }
 
+let initCwd = '';
+let initCmd = '';
+
 function connectWebSocket() {
   // Use origin + pathname as the unique identifier for the terminal instance
   const pageUrl = encodeURIComponent(pageUrlKey);
-  const connectUrl = `${wsUrl}?url=${pageUrl}&theme=${currentTheme}`;
+  let connectUrl = `${wsUrl}?url=${pageUrl}&theme=${currentTheme}`;
+  if (initCwd) {
+    connectUrl += `&cwd=${encodeURIComponent(initCwd)}`;
+  }
+  if (initCmd) {
+    connectUrl += `&cmd=${encodeURIComponent(initCmd)}`;
+  }
   ws = new WebSocket(connectUrl);
   
   ws.onopen = () => {
@@ -468,16 +477,26 @@ chrome.storage.local.get(null, (result) => {
   if (result.sharedPaths && Array.isArray(result.sharedPaths)) {
     const currentHref = window.location.href;
     const currentHostPath = window.location.host + window.location.pathname;
-    let bestMatch = '';
-    for (const p of result.sharedPaths) {
+    let bestMatch = null;
+    for (const item of result.sharedPaths) {
+      // Legacy support: if item is just a string
+      const p = typeof item === 'string' ? item : item.path;
+      if (!p) continue;
+
       if (currentHref.startsWith(p) || currentHostPath.startsWith(p)) {
-        if (p.length > bestMatch.length) {
-          bestMatch = p;
+        if (!bestMatch || p.length > (typeof bestMatch === 'string' ? bestMatch : bestMatch.path).length) {
+          bestMatch = item;
         }
       }
     }
     if (bestMatch) {
-      pageUrlKey = 'shared_' + bestMatch;
+      const matchPath = typeof bestMatch === 'string' ? bestMatch : bestMatch.path;
+      pageUrlKey = 'shared_' + matchPath;
+
+      if (typeof bestMatch === 'object') {
+        if (bestMatch.cwd) initCwd = bestMatch.cwd;
+        if (bestMatch.cmd) initCmd = bestMatch.cmd;
+      }
     }
   }
   if (result.blockedSites && Array.isArray(result.blockedSites)) {
@@ -504,6 +523,7 @@ chrome.storage.local.get(null, (result) => {
   if (result.terminalPort) {
     wsUrl = `ws://localhost:${result.terminalPort}/terminal`;
   }
+  // Remove global terminalCwd and terminalCmd processing, now handled per-path
   if (result[`terminalVisible_${pageUrlKey}`]) {
     toggleTerminal(true);
   }
