@@ -4,10 +4,12 @@ const os = require('os');
 const pty = require('node-pty');
 const cors = require('cors');
 const url = require('url');
+const pidusage = require('pidusage');
 
 const app = express();
 expressWs(app);
 app.use(cors()); // Allow connections from any website
+app.use(express.json());
 
 let defaultShell = '/bin/bash';
 if (os.platform() === 'win32') {
@@ -97,11 +99,74 @@ app.ws('/terminal', (ws, req) => {
   ws.on('close', () => {
     console.log(`[WebSocket] Terminal client disconnected from URL: ${pageUrl}`);
     instance.clients.delete(ws);
-    
+
     // We no longer kill the process here.
     // The terminal will persist even if all clients disconnect.
     // It will only be cleared when the server is restarted.
   });
+});
+
+// API endpoint to get terminal instances
+app.get('/api/terminals', async (req, res) => {
+  const instances = [];
+
+  for (const [pageUrl, instance] of terminalInstances.entries()) {
+    try {
+      const stats = await pidusage(instance.ptyProcess.pid);
+      instances.push({
+        url: pageUrl,
+        pid: instance.ptyProcess.pid,
+        clientsCount: instance.clients.size,
+        cpu: stats.cpu, // percentage (from 0 to 100*vcore)
+        memory: stats.memory, // bytes
+        elapsed: stats.elapsed, // ms since process start
+        timestamp: stats.timestamp // ms since epoch
+      });
+    } catch (e) {
+      console.error(`Error getting stats for pid ${instance.ptyProcess.pid}:`, e);
+      instances.push({
+        url: pageUrl,
+        pid: instance.ptyProcess.pid,
+        clientsCount: instance.clients.size,
+        cpu: 0,
+        memory: 0,
+        error: e.message
+      });
+    }
+  }
+
+  res.json(instances);
+});
+
+// API endpoint to kill a terminal instance
+app.delete('/api/terminals/:url', (req, res) => {
+  const targetUrl = decodeURIComponent(req.params.url);
+  const instance = terminalInstances.get(targetUrl);
+
+  if (!instance) {
+    return res.status(404).json({ error: 'Terminal instance not found' });
+  }
+
+  try {
+    // Notify clients that the terminal is being closed
+    instance.clients.forEach(clientWs => {
+      if (clientWs.readyState === 1) {
+        clientWs.send('\r\n\r\n\x1b[31m[Server] Terminal instance killed by management console.\x1b[0m\r\n');
+        clientWs.close();
+      }
+    });
+
+    // Kill the process
+    instance.ptyProcess.kill();
+
+    // Remove from map
+    terminalInstances.delete(targetUrl);
+
+    res.json({ success: true, message: 'Terminal instance killed' });
+  } catch (e) {
+    console.error(`Error killing terminal instance for ${targetUrl}:`, e);
+    res.status(500).json({ error: 'Failed to kill terminal instance' });
+  }
 });
 
 const PORT = process.env.PORT || process.env.WEB_TERMINAL_PORT || 8989;

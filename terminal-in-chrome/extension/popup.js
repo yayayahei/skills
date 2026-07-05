@@ -57,15 +57,20 @@ document.addEventListener('DOMContentLoaded', () => {
       // Notify all tabs about the port change
       chrome.tabs.query({}, (tabs) => {
         tabs.forEach(tab => {
-          chrome.tabs.sendMessage(tab.id, { 
-            type: 'UPDATE_SETTINGS', 
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'UPDATE_SETTINGS',
             port: port,
-            theme: theme 
+            theme: theme
           }).catch(() => {
             // Ignore errors for tabs where content script isn't injected
           });
         });
       });
     });
+  });
+
+  // Open management page
+  document.getElementById('manageBtn').addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('management.html') });
   });
 });
