@@ -560,10 +560,12 @@ function renderTaskList(elementId, tasks, quadrant) {
   container.innerHTML = tasks.map(task => {
     // Determine the actual quadrant for the task (useful for blocked list tasks which have originalQuadrant)
     const actualQuadrant = task.originalQuadrant || quadrant;
+    const renderQuadrant = task.blocked ? 'BLOCKED' : actualQuadrant;
     return `
     <div class="task-card ${task.blocked ? 'blocked' : ''} ${task.priority ? 'priority-' + task.priority.toLowerCase() : ''}"
          data-task-id="${task.id}"
-         data-quadrant="${actualQuadrant}">
+         data-quadrant="${renderQuadrant}"
+         data-original-quadrant="${actualQuadrant}">
       <div class="drag-handle" draggable="true" title="Drag to move"></div>
       <button class="copy-btn" data-task-id="${task.id}" data-source="${actualQuadrant}" data-type="quadrant" title="Copy to...">⎘</button>
       <button class="move-btn" data-task-id="${task.id}" data-source="${task.blocked ? 'BLOCKED' : actualQuadrant}" data-type="quadrant-to-maybe" title="Move to...">→</button>
@@ -795,7 +797,7 @@ function handleDragEnd(e) {
   // Clean up drop indicators and drop zone highlighting
   document.querySelectorAll('.drop-indicator').forEach(el => el.remove());
   document.querySelectorAll('.task-list').forEach(el => {
-    el.classList.remove('drag-over', 'q1-list', 'q2-list', 'q3-list', 'q4-list');
+    el.classList.remove('drag-over', 'q1-list', 'q2-list', 'q3-list', 'q4-list', 'blocked-list');
   });
   
   // Clear drag state (drop handler may have already processed the move)
@@ -914,9 +916,10 @@ async function handleDrop(e, targetQuadrant) {
   const sourceQuadrant = draggedTask.quadrant;
   const taskId = draggedTask.id;
   const draggedElement = draggedTask.element;
+  const originalQuadrant = draggedElement.dataset.originalQuadrant;
 
-  // Handle moving to or from BLOCKED section
-  if (targetQuadrant === 'BLOCKED' || sourceQuadrant === 'BLOCKED') {
+  // Handle moving to or from BLOCKED section, EXCEPT when reordering within BLOCKED
+  if ((targetQuadrant === 'BLOCKED' || sourceQuadrant === 'BLOCKED') && draggedElement.dataset.quadrant !== targetQuadrant) {
     console.log('[Drop] Blocked task toggle:', taskId, 'from', sourceQuadrant, 'to', targetQuadrant);
 
     // OPTIMISTIC UPDATE: Immediately move the DOM element
@@ -947,10 +950,10 @@ async function handleDrop(e, targetQuadrant) {
     try {
       // Determine the actual quadrant to update in tasks.md
       // If moving to BLOCKED, the quadrant in tasks.md is the sourceQuadrant.
-      // If moving FROM BLOCKED, the targetQuadrant is the quadrant in tasks.md to update.
+      // If moving FROM BLOCKED, the original quadrant is where it currently lives in tasks.md.
       const quadrantToUpdate = targetQuadrant === 'BLOCKED' ?
         (sourceQuadrant !== 'BLOCKED' ? sourceQuadrant : draggedElement.dataset.originalQuadrant) :
-        targetQuadrant;
+        draggedElement.dataset.originalQuadrant;
 
       const isBlocked = targetQuadrant === 'BLOCKED';
 
@@ -972,6 +975,36 @@ async function handleDrop(e, targetQuadrant) {
       console.log('[Drop] Blocked toggle Success:', result);
 
       // If moving FROM BLOCKED to a DIFFERENT quadrant than original, we need to do a move as well
+      if (!isBlocked && quadrantToUpdate !== targetQuadrant) {
+        console.log('[Drop] Also moving task from', quadrantToUpdate, 'to', targetQuadrant);
+
+        // Find insert index in the target quadrant
+        const afterElement = getDragAfterElement(container, e.clientY);
+        let insertIndex = -1; // -1 means append at end
+        if (afterElement) {
+          const allCards = [...container.querySelectorAll('.task-card')];
+          const visibleCards = allCards.filter(c => !c.classList.contains('dragging'));
+          insertIndex = visibleCards.indexOf(afterElement);
+        }
+
+        const moveResponse = await fetch('/api/tasks/move', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId: taskId,
+            sourceQuadrant: quadrantToUpdate,
+            targetQuadrant: targetQuadrant,
+            insertIndex: insertIndex
+          })
+        });
+
+        if (!moveResponse.ok) {
+          throw new Error('Failed to move task after unblocking: ' + moveResponse.statusText);
+        }
+
+        console.log('[Drop] Move after unblock Success');
+      }
+
       // For simplicity, let the server state guide the UI on next refresh
       await fetchInitialData();
 
@@ -996,25 +1029,39 @@ async function handleDrop(e, targetQuadrant) {
     insertIndex = visibleCards.indexOf(afterElement);
   }
   
-  console.log('[Drop] Task:', taskId, 'from', sourceQuadrant, 'to', targetQuadrant, 'at index', insertIndex);
-  
+  // If moving within BLOCKED, we need to tell the backend the underlying target quadrant
+  let apiTargetQuadrant = targetQuadrant;
+  let apiSourceQuadrant = sourceQuadrant;
+
+  if (targetQuadrant === 'BLOCKED') {
+    // When reordering within BLOCKED, we're not actually changing the quadrant, just the position
+    // So the target quadrant is the same as the source quadrant (the underlying one)
+    apiTargetQuadrant = draggedElement.dataset.originalQuadrant || sourceQuadrant;
+  }
+
+  if (sourceQuadrant === 'BLOCKED') {
+    apiSourceQuadrant = draggedElement.dataset.originalQuadrant;
+  }
+
+  console.log('[Drop] Task:', taskId, 'from', apiSourceQuadrant, 'to', apiTargetQuadrant, 'at index', insertIndex);
+
   // OPTIMISTIC UPDATE: Immediately move the DOM element
   // Remove dragging class first
   draggedElement.classList.remove('dragging');
-  
+
   // Move element to new position in DOM
   if (afterElement) {
     container.insertBefore(draggedElement, afterElement);
   } else {
     container.appendChild(draggedElement);
   }
-  
+
   // Update the data-quadrant attribute
   draggedElement.dataset.quadrant = targetQuadrant;
-  
+
   // Note: We do NOT renumber tasks here because the API needs the original taskId
   // The server will handle renumbering and we'll refresh after API call
-  
+
   // Call API to persist changes
   try {
     const response = await fetch('/api/tasks/move', {
@@ -1022,8 +1069,8 @@ async function handleDrop(e, targetQuadrant) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         taskId: taskId,
-        sourceQuadrant: sourceQuadrant,
-        targetQuadrant: targetQuadrant,
+        sourceQuadrant: apiSourceQuadrant,
+        targetQuadrant: apiTargetQuadrant,
         insertIndex: insertIndex
       })
     });

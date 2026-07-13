@@ -372,10 +372,16 @@ async function moveTask(taskId, sourceQuadrant, targetQuadrant, insertIndex = -1
     sourceList.splice(taskIndex, 1);
 
     // Insert into target
-    if (insertIndex === -1 || insertIndex >= targetList.length) {
+    // If moving within the same list, adjust insertIndex if we removed an item before it
+    let adjustedInsertIndex = insertIndex;
+    if (sourceQuadrant.toLowerCase() === targetQuadrant.toLowerCase() && insertIndex !== -1 && taskIndex < insertIndex) {
+      adjustedInsertIndex--;
+    }
+
+    if (adjustedInsertIndex === -1 || adjustedInsertIndex >= targetList.length) {
       targetList.push(taskToMove);
     } else {
-      targetList.splice(insertIndex, 0, taskToMove);
+      targetList.splice(adjustedInsertIndex, 0, taskToMove);
     }
 
     // Generate new markdown content (this will handle renumbering)
