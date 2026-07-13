@@ -1907,6 +1907,71 @@ async function completeMaybeTask(taskId) {
   }
 }
 
+/**
+ * Toggle the blocked status of a task
+ * @param {number} taskId - The task ID
+ * @param {string} quadrant - The quadrant (Q1, Q2, Q3, Q4)
+ * @param {boolean} isBlocked - Whether the task should be blocked
+ * @returns {Object} Result object with success status
+ */
+async function toggleTaskBlockedStatus(taskId, quadrant, isBlocked) {
+  try {
+    console.log(`[Parser] Setting blocked status of task ${taskId} in ${quadrant} to ${isBlocked}`);
+
+    const tasksFile = path.join(EISENHOWER_TASKS_DIR, 'tasks.md');
+    const content = fs.readFileSync(tasksFile, 'utf8');
+
+    // Parse current tasks
+    const tasks = parseTasks(content);
+    const sourceList = tasks[quadrant.toLowerCase()];
+
+    if (!sourceList) {
+      return { success: false, error: `Invalid quadrant: ${quadrant}` };
+    }
+
+    const taskIndex = sourceList.findIndex(t => t.id === taskId);
+    if (taskIndex === -1) {
+      return { success: false, error: `Task ${taskId} not found in ${quadrant}` };
+    }
+
+    const task = sourceList[taskIndex];
+
+    // Update the blocked status
+    task.blocked = isBlocked;
+
+    // Generate new markdown content
+    // We need to update the raw content to include or remove the 🚫 symbol
+    if (task.raw) {
+      if (isBlocked && !task.raw.includes('🚫') && !task.raw.includes('阻塞')) {
+        // Add blocked status
+        task.raw = task.raw.replace(/(### \d+\..*?\n)/, '$1- 🚫 **阻塞**\n');
+      } else if (!isBlocked) {
+        // Remove blocked status
+        task.raw = task.raw.replace(/- 🚫 \*\*阻塞\*\*\n/g, '')
+                           .replace(/- \*\*状态\*\*:(.*?)🚫(.*?)\n/g, '- **状态**:$1$2\n')
+                           .replace(/🚫/g, '')
+                           .replace(/阻塞/g, '');
+      }
+    }
+
+    const newContent = generateTasksMarkdown(tasks, content);
+
+    // Write back to file
+    fs.writeFileSync(tasksFile, newContent, 'utf8');
+
+    console.log(`[Parser] Task blocked status updated successfully`);
+
+    return {
+      success: true,
+      message: `Task blocked status updated to ${isBlocked}`
+    };
+
+  } catch (error) {
+    console.error('[Parser] Toggle blocked status error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   loadAllTasks,
   parseTasks,
@@ -1931,5 +1996,6 @@ module.exports = {
   completeTask,
   completeCustomerProject,
   completeDelegationTask,
-  completeMaybeTask
+  completeMaybeTask,
+  toggleTaskBlockedStatus
 };

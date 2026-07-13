@@ -41,6 +41,9 @@ const i18n = {
       'q4_title': '🧘 Q4: Not Urgent & Important',
       'q4_subtitle': 'Delete / Postpone',
 
+      // Blocked section
+      'blocked_title': '🚫 Blocked Tasks',
+
       // Customer section
       'customer_title': '🏢 Customer Project List',
       'filter_all': 'All',
@@ -141,6 +144,9 @@ const i18n = {
       'q3_subtitle': '批量/委派',
       'q4_title': '🧘 Q4: 不重要不紧急',
       'q4_subtitle': '推迟/删除',
+
+      // Blocked section
+      'blocked_title': '🚫 阻塞中的任务',
 
       // Customer section
       'customer_title': '🏢 客户项目清单',

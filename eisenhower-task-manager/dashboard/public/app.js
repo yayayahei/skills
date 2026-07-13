@@ -500,10 +500,34 @@ function renderMatrix() {
   const tasks = currentData.tasks;
   if (!tasks) return;
 
-  renderTaskList('q1List', tasks.q1, 'Q1');
-  renderTaskList('q2List', tasks.q2, 'Q2');
-  renderTaskList('q3List', tasks.q3, 'Q3');
-  renderTaskList('q4List', tasks.q4, 'Q4');
+  // Filter out blocked tasks from the quadrants since they will be shown in the blocked section
+  const q1Filtered = tasks.q1.filter(t => !t.blocked);
+  const q2Filtered = tasks.q2.filter(t => !t.blocked);
+  const q3Filtered = tasks.q3.filter(t => !t.blocked);
+  const q4Filtered = tasks.q4.filter(t => !t.blocked);
+
+  // Render standard quadrant lists with filtered tasks
+  renderTaskList('q1List', q1Filtered, 'Q1');
+  renderTaskList('q2List', q2Filtered, 'Q2');
+  renderTaskList('q3List', q3Filtered, 'Q3');
+  renderTaskList('q4List', q4Filtered, 'Q4');
+
+  // Collect all blocked tasks and render them in the blocked section
+  const blockedTasks = [];
+  ['q1', 'q2', 'q3', 'q4'].forEach(quadrant => {
+    if (tasks[quadrant]) {
+      tasks[quadrant].forEach(task => {
+        if (task.blocked) {
+          // Add quadrant info so we know where it came from
+          blockedTasks.push({ ...task, originalQuadrant: quadrant.toUpperCase() });
+        }
+      });
+    }
+  });
+
+  const blockedSection = document.getElementById('blockedSection');
+  blockedSection.style.display = 'block'; // Always show to allow dropping into empty list
+  renderTaskList('blockedList', blockedTasks, 'BLOCKED');
 }
 
 // Store tooltip elements keyed by task ID for proper cleanup
@@ -533,17 +557,21 @@ function renderTaskList(elementId, tasks, quadrant) {
     return;
   }
 
-  container.innerHTML = tasks.map(task => `
-    <div class="task-card ${task.blocked ? 'blocked' : ''} ${task.priority ? 'priority-' + task.priority.toLowerCase() : ''}" 
-         data-task-id="${task.id}" 
-         data-quadrant="${quadrant}">
+  container.innerHTML = tasks.map(task => {
+    // Determine the actual quadrant for the task (useful for blocked list tasks which have originalQuadrant)
+    const actualQuadrant = task.originalQuadrant || quadrant;
+    return `
+    <div class="task-card ${task.blocked ? 'blocked' : ''} ${task.priority ? 'priority-' + task.priority.toLowerCase() : ''}"
+         data-task-id="${task.id}"
+         data-quadrant="${actualQuadrant}">
       <div class="drag-handle" draggable="true" title="Drag to move"></div>
-      <button class="copy-btn" data-task-id="${task.id}" data-source="${quadrant}" data-type="quadrant" title="Copy to...">⎘</button>
-      <button class="move-btn" data-task-id="${task.id}" data-source="${quadrant}" data-type="quadrant-to-maybe" title="Move to Maybe...">→</button>
-      <button class="complete-btn" data-task-id="${task.id}" data-quadrant="${quadrant}" title="Complete">✓</button>
-      <button class="delete-btn" data-task-id="${task.id}" data-quadrant="${quadrant}" title="Delete">×</button>
+      <button class="copy-btn" data-task-id="${task.id}" data-source="${actualQuadrant}" data-type="quadrant" title="Copy to...">⎘</button>
+      <button class="move-btn" data-task-id="${task.id}" data-source="${task.blocked ? 'BLOCKED' : actualQuadrant}" data-type="quadrant-to-maybe" title="Move to...">→</button>
+      <button class="complete-btn" data-task-id="${task.id}" data-quadrant="${actualQuadrant}" title="Complete">✓</button>
+      <button class="delete-btn" data-task-id="${task.id}" data-quadrant="${actualQuadrant}" title="Delete">×</button>
       <div class="task-title-row">
         <span class="task-id">#${task.id}</span>
+        ${task.originalQuadrant ? `<span class="task-priority" style="background: var(--bg-tertiary); color: var(--text-muted);">${task.originalQuadrant}</span>` : ''}
         ${task.priority ? `<span class="task-priority ${task.priority.toLowerCase()}">${task.priority}</span>` : ''}
         <span class="task-title-text">${escapeHtml(task.title)}</span>
       </div>
@@ -555,7 +583,7 @@ function renderTaskList(elementId, tasks, quadrant) {
       ` : ''}
       ${task.blocked ? `<div class="task-meta"><span class="blocked-badge">${i18n.t('blocked_badge')}</span></div>` : ''}
     </div>
-  `).join('');
+  `}).join('');
 
   // Initialize drag and drop for this container
   initDragAndDrop(container, quadrant);
@@ -789,7 +817,7 @@ function handleDragLeave(e) {
   const container = e.currentTarget;
   // Only remove if we're actually leaving the container (not entering a child)
   if (!container.contains(e.relatedTarget)) {
-    container.classList.remove('drag-over', 'q1-list', 'q2-list', 'q3-list', 'q4-list');
+    container.classList.remove('drag-over', 'q1-list', 'q2-list', 'q3-list', 'q4-list', 'blocked-list');
   }
 }
 
@@ -864,29 +892,99 @@ let isProcessingDrop = false;
 // Drop handler
 async function handleDrop(e, targetQuadrant) {
   e.preventDefault();
-  
+
   // Prevent duplicate drop processing
   if (isProcessingDrop) {
     console.log('[Drop] Already processing a drop, ignoring duplicate');
     return;
   }
   isProcessingDrop = true;
-  
+
   const container = e.currentTarget;
-  container.classList.remove('drag-over', 'q1-list', 'q2-list', 'q3-list', 'q4-list');
-  
+  container.classList.remove('drag-over', 'q1-list', 'q2-list', 'q3-list', 'q4-list', 'blocked-list');
+
   // Clean up drop indicators
   document.querySelectorAll('.drop-indicator').forEach(el => el.remove());
-  
+
   if (!draggedTask) {
     isProcessingDrop = false;
     return;
   }
-  
+
   const sourceQuadrant = draggedTask.quadrant;
   const taskId = draggedTask.id;
   const draggedElement = draggedTask.element;
-  
+
+  // Handle moving to or from BLOCKED section
+  if (targetQuadrant === 'BLOCKED' || sourceQuadrant === 'BLOCKED') {
+    console.log('[Drop] Blocked task toggle:', taskId, 'from', sourceQuadrant, 'to', targetQuadrant);
+
+    // OPTIMISTIC UPDATE: Immediately move the DOM element
+    draggedElement.classList.remove('dragging');
+
+    // If moving TO blocked, set blocked visual state and remember original quadrant
+    if (targetQuadrant === 'BLOCKED') {
+      draggedElement.classList.add('blocked');
+      // Only set originalQuadrant if we are not already in BLOCKED
+      if (sourceQuadrant !== 'BLOCKED') {
+        draggedElement.dataset.originalQuadrant = sourceQuadrant;
+      }
+      draggedElement.dataset.quadrant = 'BLOCKED';
+    } else {
+      // Moving FROM blocked back to a quadrant
+      draggedElement.classList.remove('blocked');
+      draggedElement.dataset.quadrant = targetQuadrant;
+    }
+
+    const afterElement = getDragAfterElement(container, e.clientY);
+    if (afterElement) {
+      container.insertBefore(draggedElement, afterElement);
+    } else {
+      container.appendChild(draggedElement);
+    }
+
+    // Call API to persist blocked status change
+    try {
+      // Determine the actual quadrant to update in tasks.md
+      // If moving to BLOCKED, the quadrant in tasks.md is the sourceQuadrant.
+      // If moving FROM BLOCKED, the targetQuadrant is the quadrant in tasks.md to update.
+      const quadrantToUpdate = targetQuadrant === 'BLOCKED' ?
+        (sourceQuadrant !== 'BLOCKED' ? sourceQuadrant : draggedElement.dataset.originalQuadrant) :
+        targetQuadrant;
+
+      const isBlocked = targetQuadrant === 'BLOCKED';
+
+      const response = await fetch('/api/tasks/toggle-blocked', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: taskId,
+          quadrant: quadrantToUpdate,
+          isBlocked: isBlocked
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle blocked status: ' + response.statusText);
+      }
+
+      const result = await response.json();
+      console.log('[Drop] Blocked toggle Success:', result);
+
+      // If moving FROM BLOCKED to a DIFFERENT quadrant than original, we need to do a move as well
+      // For simplicity, let the server state guide the UI on next refresh
+      await fetchInitialData();
+
+    } catch (error) {
+      console.error('[Drop] Blocked toggle Error:', error);
+      alert('Failed to toggle blocked status: ' + error.message);
+      await fetchInitialData();
+    } finally {
+      isProcessingDrop = false;
+    }
+    return;
+  }
+
   // Find the insert position
   const afterElement = getDragAfterElement(container, e.clientY);
   let insertIndex = -1; // -1 means append at end
@@ -2118,25 +2216,28 @@ let currentMoveToSource = null;
 function showMoveToMenu(taskId, source) {
   currentMoveToTaskId = taskId;
   currentMoveToSource = source;
-  
+
   // Remove existing menu
   const existingMenu = document.getElementById('moveToMenuOverlay');
   if (existingMenu) {
     existingMenu.remove();
   }
-  
+
   const overlay = document.createElement('div');
   overlay.id = 'moveToMenuOverlay';
   overlay.className = 'copy-menu-overlay';
-  
+
   const title = i18n.t('move_task_to') || 'Move Task to...';
-  
+
+  const isBlocked = source === 'BLOCKED';
+
   overlay.innerHTML = `
     <div class="copy-menu">
       <div class="copy-menu-header">${title}</div>
       <div class="copy-menu-section">
         <div class="copy-menu-label">${i18n.t('target_list') || 'Target List'}</div>
         <div class="copy-menu-options">
+          ${isBlocked ? '' : `<button class="copy-menu-btn blocked-toggle" data-target="blocked">🚫 ${i18n.t('blocked_badge') || 'Blocked'}</button>`}
           <button class="copy-menu-btn maybe" data-target="maybe">🌱 ${i18n.t('maybe_list') || 'Maybe List'}</button>
           <button class="copy-menu-btn delegation" data-target="delegation">👑 ${i18n.t('delegation_list') || 'Delegation List'}</button>
         </div>
@@ -2144,14 +2245,14 @@ function showMoveToMenu(taskId, source) {
       <button class="copy-menu-cancel">${i18n.t('cancel') || 'Cancel'}</button>
     </div>
   `;
-  
+
   document.body.appendChild(overlay);
-  
+
   // Show menu with animation
   requestAnimationFrame(() => {
     overlay.classList.add('show');
   });
-  
+
   // Add event listeners
   overlay.querySelectorAll('.copy-menu-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2160,16 +2261,16 @@ function showMoveToMenu(taskId, source) {
       hideMoveToMenu();
     });
   });
-  
+
   overlay.querySelector('.copy-menu-cancel').addEventListener('click', hideMoveToMenu);
-  
+
   // Close on overlay click
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) {
       hideMoveToMenu();
     }
   });
-  
+
   // Close on Escape key
   document.addEventListener('keydown', handleMoveToMenuKeydown);
 }
@@ -2193,11 +2294,43 @@ function handleMoveToMenuKeydown(e) {
 
 async function executeMoveTo(target) {
   if (!currentMoveToTaskId || !currentMoveToSource) return;
-  
+
   if (target === 'maybe') {
     await moveTaskToMaybe(currentMoveToTaskId, currentMoveToSource);
   } else if (target === 'delegation') {
     await moveTaskToDelegation(currentMoveToTaskId, currentMoveToSource);
+  } else if (target === 'blocked') {
+    await toggleTaskBlocked(currentMoveToTaskId, currentMoveToSource, true);
+  }
+}
+
+async function toggleTaskBlocked(taskId, sourceQuadrant, isBlocked) {
+  try {
+    console.log('[Toggle Blocked] Task:', taskId, 'from', sourceQuadrant, 'to blocked:', isBlocked);
+
+    // Call the toggle-blocked API
+    const response = await fetch('/api/tasks/toggle-blocked', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskId: taskId,
+        quadrant: sourceQuadrant,
+        isBlocked: isBlocked
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to toggle blocked status: ' + response.statusText);
+    }
+
+    const result = await response.json();
+    console.log('[Toggle Blocked] Success:', result);
+
+    await fetchInitialData();
+
+  } catch (error) {
+    console.error('[Toggle Blocked] Error:', error);
+    alert('Failed to toggle blocked status: ' + error.message);
   }
 }
 

@@ -32,7 +32,8 @@ const {
   completeTask,
   completeCustomerProject,
   completeDelegationTask,
-  completeMaybeTask
+  completeMaybeTask,
+  toggleTaskBlockedStatus
 } = require('./parser');
 
 // Parse command line arguments for port
@@ -637,6 +638,30 @@ app.post('/api/maybe/complete', async (req, res) => {
     }
   } catch (error) {
     console.error('[API] Complete maybe task error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API endpoint to toggle a task's blocked status
+app.post('/api/tasks/toggle-blocked', async (req, res) => {
+  try {
+    const { taskId, quadrant, isBlocked } = req.body;
+
+    console.log('[API] Toggle task blocked status:', { taskId, quadrant, isBlocked });
+
+    if (!taskId || !quadrant || isBlocked === undefined) {
+      return res.status(400).json({ error: 'Missing required fields: taskId, quadrant, isBlocked' });
+    }
+
+    const result = await toggleTaskBlockedStatus(taskId, quadrant, isBlocked);
+
+    if (result.success) {
+      res.json({ success: true, message: result.message });
+    } else {
+      res.status(400).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('[API] Toggle task blocked error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

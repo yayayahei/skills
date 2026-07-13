@@ -285,6 +285,32 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Blocked Section */
+.blocked-section {
+  background: rgba(231, 76, 60, 0.1);
+  border: 2px dashed #e74c3c;
+  border-radius: var(--border-radius);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.blocked-section h2 {
+  color: #e74c3c;
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blocked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
 /* Quadrant Grid */
 .quadrant-grid {
   display: grid;
@@ -529,6 +555,17 @@ body {
   background: rgba(46, 204, 113, 0.2);
   border-color: var(--maybe-color);
   min-height: 50px;
+}
+
+/* Add styles for dropping into the blocked section */
+.blocked-list {
+  min-height: 50px; /* Ensure there is always a drop zone */
+}
+
+.blocked-list.drag-over {
+  background: rgba(231, 76, 60, 0.05);
+  outline: 2px dashed rgba(231, 76, 60, 0.5);
+  outline-offset: -2px;
 }
 
 .task-title-row {
